@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+body { @apply bg-mist text-slate-800; }
+.card { @apply rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200; }
+.btn { @apply rounded-lg bg-moss px-3 py-2 text-sm font-semibold text-white hover:bg-pine focus-visible:outline focus-visible:outline-2 focus-visible:outline-brass; }
+.btn-ghost { @apply rounded-lg px-3 py-2 text-sm font-semibold text-moss ring-1 ring-moss/40 hover:bg-mist; }
+.input { @apply w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-moss focus:outline-none; }
