@@ -2,11 +2,11 @@
 import { useState } from "react";
 export const rupiah = (n) => "Rp " + n.toLocaleString("id-ID");
 
-export function Stat({ label, value, tone, hint, onClick }) {
+export function Stat({ label, value, tone, color, hint, onClick }) {
   const C = onClick ? "button" : "div";
   return (
     <C onClick={onClick} className={`card text-left ${onClick ? "hover:ring-moss focus-visible:outline focus-visible:outline-2 focus-visible:outline-brass" : ""}`}>
-      <p className={`text-2xl font-extrabold ${tone || "text-pine"}`}>{value}</p>
+      <p className={`text-2xl font-extrabold ${tone || "text-pine"}`} style={color ? { color } : undefined}>{value}</p>
       <p className="text-xs text-slate-500">{label}</p>
       {hint && <p className="mt-1 text-[11px] text-slate-400">{hint}</p>}
     </C>
@@ -77,7 +77,7 @@ export function Bars({ data, max, unit = "", onPick }) {
         <li key={d.label}>
           <button type="button" onClick={() => onPick && onPick(d)} className="block w-full text-left" title={`${d.label}: ${d.value}${unit}`}>
             <div className="flex justify-between text-xs"><span>{d.label}</span><span className="font-semibold">{d.value}{unit}{d.sub ? ` · ${d.sub}` : ""}</span></div>
-            <div className="h-3 rounded-full bg-slate-100"><div className="h-3 rounded-full" style={{ width: (d.value / m) * 100 + "%", background: d.color || "#1F5A43" }} /></div>
+            <div className="h-3 rounded-full bg-slate-100"><div className="h-3 rounded-full" style={{ width: (d.value / m) * 100 + "%", background: d.color || "#2FA37A" }} /></div>
           </button>
         </li>
       ))}
@@ -85,7 +85,7 @@ export function Bars({ data, max, unit = "", onPick }) {
   );
 }
 
-export function Trend({ points, unit = "", color = "#1F5A43" }) {
+export function Trend({ points, unit = "", color = "#2FA37A" }) {
   const [h, setH] = useState(null);
   const vals = points.map((p) => p.value);
   const min = Math.min(...vals) - 2, max = Math.max(...vals) + 2;
