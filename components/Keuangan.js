@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import * as D from "@/lib/data";
-import { Stat, Modal, Hint, Donut, Bars, rupiah } from "./Charts";
+import { Stat, Modal, Hint, Donut, Bars, ExportBtn, rupiah } from "./Charts";
+import DateRange, { inRange, ALL, bulanIni } from "./DateRange";
 
 const Chip = ({ on, ...p }) => <button {...p} className={`rounded-full px-4 py-1.5 text-sm font-semibold ${on ? "bg-moss text-white" : "bg-mist text-moss"}`} />;
 const monthLabel = (k) => D.BULAN[+k.slice(5) - 1] + " " + k.slice(0, 4);
@@ -50,11 +51,11 @@ function Ipl() {
 
 function Pengeluaran({ S }) {
   const { exp, setExp } = S;
-  const bulan = [...new Set(exp.map((e) => e.tgl.slice(0, 7)))].sort().reverse();
-  const [b, setB] = useState(D.THIS_MONTH);
+  const [rg, setRg] = useState(bulanIni());
+  const shown = exp.filter((e) => inRange(e.tgl, rg));
   const [f, setF] = useState({ tgl: D.TODAY, kat: D.KAT_EXP[0], ket: "", nominal: "" });
   const sum = (k) => exp.filter((e) => e.tgl.startsWith(k)).reduce((a, e) => a + e.nominal, 0);
-  const add = (e) => { e.preventDefault(); if (!f.ket || !f.nominal) return; setExp([{ id: Date.now(), ...f, nominal: +f.nominal }, ...exp]); setB(f.tgl.slice(0, 7)); setF({ ...f, ket: "", nominal: "" }); };
+  const add = (e) => { e.preventDefault(); if (!f.ket || !f.nominal) return; setExp([{ id: Date.now(), ...f, nominal: +f.nominal }, ...exp]); if (!inRange(f.tgl, rg)) setRg(ALL); setF({ ...f, ket: "", nominal: "" }); };
   const data = monthly(exp).map(([k, v]) => ({ label: D.BULAN[+k.slice(5) - 1], value: Math.round(v / 1e6), color: k === D.THIS_MONTH ? D.C.navy : "#CBD5E1" }));
   return (
     <div className="space-y-4">
@@ -67,8 +68,9 @@ function Pengeluaran({ S }) {
         <input className="input" type="number" placeholder="Nominal (Rp)" aria-label="Nominal" value={f.nominal} onChange={(e) => setF({ ...f, nominal: e.target.value })} />
         <button className="btn sm:col-span-2">Simpan pengeluaran</button>
       </form>
-      <div className="flex flex-wrap gap-2">{bulan.map((k) => <Chip key={k} on={b === k} onClick={() => setB(k)}>{monthLabel(k)}</Chip>)}</div>
-      <ul className="space-y-2">{exp.filter((e) => e.tgl.startsWith(b)).sort((x, y) => y.tgl.localeCompare(x.tgl)).map((e) => <li key={e.id} className="card flex justify-between !p-3 text-sm"><span><b>{e.kat}</b><br /><span className="text-slate-500">{e.ket} · {e.tgl.slice(8)} {D.BULAN[+e.tgl.slice(5, 7) - 1]}</span></span><b>{rupiah(e.nominal)}</b></li>)}</ul>
+      <div className="flex flex-wrap items-center gap-2"><DateRange value={rg} onChange={setRg} /><ExportBtn name="pengeluaran" rows={shown.map((e) => ({ Tanggal: e.tgl, Kategori: e.kat, Keterangan: e.ket, Nominal: e.nominal }))} /></div>
+      <p className="text-sm text-slate-500">{shown.length} transaksi · total <b className="text-pine">{rupiah(shown.reduce((a, e) => a + e.nominal, 0))}</b></p>
+      <ul className="space-y-2">{[...shown].sort((x, y) => y.tgl.localeCompare(x.tgl)).map((e) => <li key={e.id} className="card flex justify-between !p-3 text-sm"><span><b>{e.kat}</b><br /><span className="text-slate-500">{e.ket} · {e.tgl.slice(8)} {D.BULAN[+e.tgl.slice(5, 7) - 1]}</span></span><b>{rupiah(e.nominal)}</b></li>)}</ul>
     </div>
   );
 }
@@ -100,18 +102,21 @@ function Neraca({ S }) {
 
 function Donasi({ S }) {
   const { don, setDon } = S;
+  const [rg, setRg] = useState(ALL);
+  const shown = don.filter((d) => inRange(d.tgl, rg));
   const [f, setF] = useState({ jenis: D.JENIS_DON[0], nama: "", nominal: "" });
   const cols = [D.C.ok, "#64748B", D.C.warn, D.C.info];
   return (
     <div className="space-y-4">
-      <div className="card"><Donut center="Rupiah" data={D.JENIS_DON.map((j, i) => ({ label: j, color: cols[i], value: don.filter((d) => d.jenis === j).reduce((a, d) => a + d.nominal, 0) })).filter((d) => d.value)} /></div>
-      <form className="card grid gap-2 sm:grid-cols-3" onSubmit={(e) => { e.preventDefault(); if (f.nama && f.nominal) { setDon([{ id: Date.now(), ...f, nominal: +f.nominal }, ...don]); setF({ ...f, nama: "", nominal: "" }); } }}>
+      <DateRange value={rg} onChange={setRg} />
+      <div className="card"><Donut center="Rupiah" data={D.JENIS_DON.map((j, i) => ({ label: j, color: cols[i], value: shown.filter((d) => d.jenis === j).reduce((a, d) => a + d.nominal, 0) })).filter((d) => d.value)} /></div>
+      <form className="card grid gap-2 sm:grid-cols-3" onSubmit={(e) => { e.preventDefault(); if (f.nama && f.nominal) { setDon([{ id: Date.now(), tgl: D.TODAY, ...f, nominal: +f.nominal }, ...don]); setF({ ...f, nama: "", nominal: "" }); } }}>
         <select className="input" aria-label="Jenis" value={f.jenis} onChange={(e) => setF({ ...f, jenis: e.target.value })}>{D.JENIS_DON.map((j) => <option key={j}>{j}</option>)}</select>
         <input className="input" placeholder="Nama donatur" aria-label="Donatur" value={f.nama} onChange={(e) => setF({ ...f, nama: e.target.value })} />
         <input className="input" type="number" placeholder="Nominal (Rp)" aria-label="Nominal" value={f.nominal} onChange={(e) => setF({ ...f, nominal: e.target.value })} />
         <button className="btn sm:col-span-3">Simpan donasi</button>
       </form>
-      <ul className="space-y-2">{don.map((d) => <li key={d.id} className="card flex justify-between !p-3 text-sm"><span><b>{d.jenis}</b> · {d.nama}</span><b>{rupiah(d.nominal)}</b></li>)}</ul>
+      <ul className="space-y-2">{shown.map((d) => <li key={d.id} className="card flex justify-between !p-3 text-sm"><span><b>{d.jenis}</b> · {d.nama} <span className="text-xs text-slate-400">· {d.tgl.slice(8)}/{d.tgl.slice(5, 7)}</span></span><b>{rupiah(d.nominal)}</b></li>)}</ul>
     </div>
   );
 }

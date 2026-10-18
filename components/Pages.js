@@ -1,13 +1,15 @@
 "use client";
 import { useState } from "react";
 import * as D from "@/lib/data";
-import { Stat, Modal, Hint, Donut, Bars, rupiah } from "./Charts";
+import { Stat, Modal, Hint, Donut, Bars, ExportBtn, rupiah } from "./Charts";
+import DateRange, { inRange, ALL, lastDays, eachDay } from "./DateRange";
 
 const Chip = ({ on, ...p }) => <button {...p} className={`rounded-full px-4 py-1.5 text-sm font-semibold ${on ? "bg-moss text-white" : "bg-mist text-moss"}`} />;
 const fmt = (s) => new Date(s + "T00:00").toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 const addMin = (hm, m) => { const [h, mm] = hm.split(":").map(Number); const t = (h * 60 + mm + m) % 1440; return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); };
 const scope = (role, list) => (D.SCOPE[role] ? list.filter((t) => D.SCOPE[role].includes(t.kat)) : list);
 const hadir = (att, groups) => groups.flatMap((g) => g.members).filter((m) => att[m]?.in && !att[m]?.status).length;
+const pseudo = (m, d) => { const dt = new Date(d + "T00:00"); if (dt.getDay() === 0) return "Libur"; const k = (m.length * (dt.getDate() + 3)) % 11; return k === 0 ? "Sakit" : k < 4 ? "Telat" : "Tepat"; };
 const stat = (s = {}) => {
   if (s.status) return [s.status, s.status === "Bolos" ? D.C.bad : s.status === "Libur" ? D.C.mute : D.C.info];
   if (!s.in) return ["Belum Check-in", D.C.mute];
@@ -35,6 +37,14 @@ export function Dashboard({ role, go, S }) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">{cards.map(([l, v, p, s, c, h]) => <Stat key={l} label={l} value={v} color={c} hint={h || "Ketuk untuk detail"} onClick={() => go(p, s)} />)}</div>
+      {role === "rw" && (
+        <section>
+          <h3 className="mb-2 font-bold text-pine">Executive dashboard <span className="text-xs font-normal text-slate-400">· ringkasan seluruh operasional komplek</span></h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[["Resident Management", "Data warga, rumah, penghuni, kendaraan", "penghuni"], ["Finance & Billing", "IPL, tagihan, pembayaran, tunggakan", "keuangan"], ["Security", "Tamu, kendaraan, kejadian, akses gerbang", "cctv"], ["Maintenance", "Komplain, work order, preventive maintenance", "maintenance"], ["Facility Booking", "Reservasi dan penggunaan fasilitas", "fasilitas"], ["Community", "Pengumuman, event, administrasi warga", "info"], ["Reporting & Analytics", "Laporan KPI, audit trail, anggaran, SLA, dan evaluasi kinerja", "laporan"]].map(([t, d, p], i) => <button key={t} onClick={() => go(p)} className={`card text-left transition hover:ring-moss ${i === 6 ? "sm:col-span-2" : ""}`}><p className="font-bold text-pine">{t}</p><p className="text-sm text-slate-500">{d}</p></button>)}
+          </div>
+        </section>
+      )}
       <div className="grid gap-4 md:grid-cols-2">
         {["rw", "keamanan"].includes(role) && <section className="card"><h3 className="mb-2 font-bold text-pine">Kendaraan minggu ini</h3><Donut data={jenis} center="kendaraan" /></section>}
         {role === "kebersihan" && <section className="card"><h3 className="mb-2 font-bold text-pine">Kehadiran per area</h3><Bars data={[{ label: "RW 29", value: area("RW 29") }, { label: "RW 31", value: area("RW 31") }]} unit=" orang" /></section>}
@@ -54,7 +64,7 @@ export function Dashboard({ role, go, S }) {
 export function Absensi({ S, kind }) {
   const sec = kind === "security", groups = sec ? D.SECURITY : D.KEBERSIHAN;
   const { att, setAtt } = S;
-  const [delay, setDelay] = useState(0), [sel, setSel] = useState(null);
+  const [delay, setDelay] = useState(0), [sel, setSel] = useState(null), [rg, setRg] = useState(lastDays(7));
   const set = (m, v) => setAtt((a) => ({ ...a, [m]: { ...a[m], ...v } }));
   const all = groups.flatMap((g) => g.members);
   const h = hadir(att, groups);
@@ -71,6 +81,16 @@ export function Absensi({ S, kind }) {
         <select className="input !w-auto" aria-label="Simulasi keterlambatan" value={delay} onChange={(e) => setDelay(+e.target.value)}>{[[0, "Tepat waktu"], [30, "Telat 30 menit"], [50, "Telat 50 menit"], [75, "Telat 75 menit"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
         <Hint><p><b style={{ color: D.C.ok }}>Hijau</b>: tepat waktu (sampai 44 menit). <b style={{ color: D.C.warn }}>Kuning</b>: terlambat 45–60 menit. <b style={{ color: D.C.bad }}>Merah</b>: terlambat lebih dari 60 menit.</p></Hint>
       </div>
+      <section className="card">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><h3 className="font-bold text-pine">Rekap kehadiran</h3><DateRange noAll value={rg} onChange={setRg} /></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead><tr className="text-left text-xs text-slate-400"><th className="py-1">Nama</th><th>Tepat</th><th>Telat</th><th>Sakit</th><th>Libur</th></tr></thead>
+            <tbody>{all.map((m) => { const c = { Tepat: 0, Telat: 0, Sakit: 0, Libur: 0 }; eachDay(rg).forEach((d) => { c[pseudo(m, d)]++; }); return <tr key={m} className="border-t border-slate-100"><td className="py-1.5">{m}</td><td style={{ color: D.C.ok }}>{c.Tepat}</td><td style={{ color: D.C.warn }}>{c.Telat}</td><td style={{ color: D.C.info }}>{c.Sakit}</td><td className="text-slate-400">{c.Libur}</td></tr>; })}</tbody>
+          </table>
+        </div>
+        <p className="mt-2 text-xs text-slate-400">{eachDay(rg).length} hari dipilih. Data riwayat contoh, hari Minggu dihitung libur.</p>
+      </section>
       {groups.map((gr) => (
         <section key={gr.group} className="card">
           <h3 className="mb-2 font-bold text-pine">{gr.group} <span className="text-xs font-normal text-slate-400">· {D.SHIFT[gr.group].label}</span></h3>
@@ -107,11 +127,11 @@ export function Absensi({ S, kind }) {
 
 export function Tiket({ S, role }) {
   const { tiket, setTiket } = S;
-  const [fs, setFs] = useState("Semua"), [fk, setFk] = useState("Semua"), [sel, setSel] = useState(null), [note, setNote] = useState("");
+  const [fs, setFs] = useState("Semua"), [fk, setFk] = useState("Semua"), [sel, setSel] = useState(null), [note, setNote] = useState(""), [rg, setRg] = useState(ALL);
   const kats = D.SCOPE[role] || D.KAT_ADU;
   const E = { judul: "", kat: kats[0], lokasi: "", desk: "", pelapor: "", foto: false };
   const [f, setF] = useState(E);
-  const list = scope(role, tiket).filter((t) => (fs === "Semua" || t.status === fs) && (fk === "Semua" || t.kat === fk));
+  const list = scope(role, tiket).filter((t) => (fs === "Semua" || t.status === fs) && (fk === "Semua" || t.kat === fk) && inRange(t.tgl, rg));
   const t = tiket.find((x) => x.id === sel);
   const upd = (id, v) => setTiket(tiket.map((x) => (x.id === id ? { ...x, ...v } : x)));
   const col = (s) => D.STATUS_ADU.find((x) => x[0] === s)[1];
@@ -131,6 +151,8 @@ export function Tiket({ S, role }) {
       <div className="flex flex-wrap items-center gap-2">
         {["Semua", ...D.STATUS_ADU.map((s) => s[0])].map((s) => <Chip key={s} on={fs === s} onClick={() => setFs(s)}>{s}</Chip>)}
         <select className="input !w-auto" aria-label="Filter kategori" value={fk} onChange={(e) => setFk(e.target.value)}>{["Semua", ...kats].map((k) => <option key={k}>{k}</option>)}</select>
+        <DateRange value={rg} onChange={setRg} />
+        <ExportBtn name="pengaduan" rows={list.map((t) => ({ Tanggal: t.tgl, Judul: t.judul, Kategori: t.kat, Lokasi: t.lokasi, Pelapor: t.pelapor, Status: t.status }))} />
       </div>
       <ul className="space-y-2">
         {list.map((x) => <li key={x.id}><button className="card flex w-full items-center justify-between gap-3 !p-3 text-left" onClick={() => setSel(x.id)}><span className="text-sm"><b className="text-pine">{x.judul}</b><br /><span className="text-slate-500">{x.kat} · {x.lokasi} · {x.pelapor}</span></span><span className="shrink-0 rounded-full px-2 py-1 text-xs font-semibold text-white" style={{ background: col(x.status) }}>{x.status}</span></button></li>)}
@@ -153,7 +175,7 @@ export function Tiket({ S, role }) {
 export function Info({ S, role }) {
   const { info, setInfo } = S;
   const E = { judul: "", kat: D.KAT_INFO[0], tgl: "", mulai: "", selesai: "", tempat: "", desk: "", pj: "", konf: "" };
-  const [f, setF] = useState(E), [fk, setFk] = useState("Semua"), [sel, setSel] = useState(null);
+  const [f, setF] = useState(E), [fk, setFk] = useState("Semua"), [sel, setSel] = useState(null), [rg, setRg] = useState(ALL);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const ok = Object.values(f).every((v) => v.trim());
   const canMake = ["rw", "keamanan"].includes(role);
@@ -181,8 +203,9 @@ export function Info({ S, role }) {
         </form>
       )}
       <div className="flex flex-wrap gap-2">{["Semua", ...D.KAT_INFO].map((k) => <Chip key={k} on={fk === k} onClick={() => setFk(k)}>{k}</Chip>)}</div>
+      <DateRange future value={rg} onChange={setRg} />
       <ul className="space-y-3">
-        {info.filter((i) => fk === "Semua" || i.kat === fk).map((i) => (
+        {info.filter((i) => (fk === "Semua" || i.kat === fk) && inRange(i.tgl, rg)).map((i) => (
           <li key={i.id}><button className="card w-full text-left" onClick={() => setSel(i.id)}>
             <span className="rounded-full bg-mist px-2 py-0.5 text-[11px] font-semibold text-moss">{i.kat}</span>
             <h3 className="mt-1 font-bold text-pine">{i.judul}</h3>

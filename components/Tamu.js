@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
 import * as D from "@/lib/data";
-import { Stat, Modal, Hint } from "./Charts";
+import { Stat, Modal, Hint, ExportBtn } from "./Charts";
 import { Ktp, Kendaraan } from "./Photos";
+import DateRange, { inRange, ALL } from "./DateRange";
 
 export const nowHM = () => new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }).replace(".", ":");
 const mins = (a) => { const [h, m] = a.split(":").map(Number); return h * 60 + m; };
@@ -12,7 +13,7 @@ const EMPTY = { nama: "", plat: "", jenis: D.JENIS_KENDARAAN[0], rumah: "", warg
 
 export default function Tamu({ S }) {
   const { tamu, setTamu } = S;
-  const [tab, setTab] = useState("dalam"), [jf, setJf] = useState("Semua"), [q, setQ] = useState(""), [sel, setSel] = useState(null), [f, setF] = useState(EMPTY);
+  const [tab, setTab] = useState("dalam"), [jf, setJf] = useState("Semua"), [q, setQ] = useState(""), [sel, setSel] = useState(null), [f, setF] = useState(EMPTY), [rg, setRg] = useState(ALL), [view, setView] = useState("kartu");
   const ok = f.nama && f.plat && f.rumah && f.warga && f.ktp && f.foto;
   const keluar = (id) => setTamu(tamu.map((t) => (t.id === id ? { ...t, keluar: nowHM() } : t)));
   const add = (e) => {
@@ -21,7 +22,7 @@ export default function Tamu({ S }) {
     setTamu([{ ...f, id: Date.now(), nik: "35150" + String(Date.now()).slice(-11), tgl: D.TODAY, masuk: nowHM(), keluar: null }, ...tamu]);
     setF(EMPTY); setTab("dalam");
   };
-  const list = (tab === "dalam" ? tamu.filter((t) => !t.keluar) : tamu).filter((t) => (t.nama + t.plat).toLowerCase().includes(q.toLowerCase()) && (jf === "Semua" || t.jenis === jf));
+  const list = (tab === "dalam" ? tamu.filter((t) => !t.keluar) : tamu).filter((t) => (t.nama + t.plat).toLowerCase().includes(q.toLowerCase()) && (jf === "Semua" || t.jenis === jf) && inRange(t.tgl, rg));
   const t = tamu.find((x) => x.id === sel);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   return (
@@ -48,9 +49,15 @@ export default function Tamu({ S }) {
       <div className="flex flex-wrap items-center gap-2">
         {[["dalam", `Sedang di dalam (${tamu.filter((x) => !x.keluar).length})`], ["riwayat", "Riwayat"]].map(([k, l]) => <button key={k} onClick={() => setTab(k)} className={`rounded-full px-4 py-1.5 text-sm font-semibold ${tab === k ? "bg-moss text-white" : "bg-mist text-moss"}`}>{l}</button>)}
         <select className="input !w-auto" aria-label="Filter jenis" value={jf} onChange={(e) => setJf(e.target.value)}>{["Semua", ...D.JENIS_KENDARAAN].map((j) => <option key={j}>{j}</option>)}</select>
+        <DateRange value={rg} onChange={setRg} />
         <input className="input !w-auto flex-1" placeholder="Cari nama atau plat" aria-label="Cari" value={q} onChange={(e) => setQ(e.target.value)} />
+        {["kartu", "tabel"].map((v) => <button key={v} onClick={() => setView(v)} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${view === v ? "bg-moss text-white" : "bg-mist text-moss"}`}>{v === "kartu" ? "Kartu" : "Tabel"}</button>)}
+        <ExportBtn name="tamu-kendaraan" rows={list.map((t) => ({ Plat: t.plat, Identifikasi: t.nik, Jenis: t.jenis, Tujuan: `${t.rumah} ${t.warga}`, Tanggal: t.tgl, Masuk: t.masuk, Keluar: t.keluar || "" }))} />
       </div>
-      <ul className="space-y-2">
+      {view === "tabel" && (
+        <div className="card overflow-x-auto !p-3"><table className="w-full text-sm"><thead><tr className="text-left text-xs text-slate-400"><th className="py-1">Plat</th><th>Identifikasi</th><th>Jenis</th><th>Tujuan</th><th>Waktu</th><th>Foto</th></tr></thead><tbody>{list.map((x) => <tr key={x.id} className="border-t border-slate-100"><td className="py-2 font-semibold">{x.plat}</td><td>{x.nik}</td><td>{x.jenis}</td><td>{x.rumah}, {x.warga}</td><td>{tglLabel(x.tgl)} {x.masuk}{x.keluar ? `–${x.keluar}` : ""}</td><td><button aria-label={`Foto ${x.nama}`} onClick={() => setSel(x.id)} className="rounded-full bg-mist px-3 py-1 text-moss">🪪</button></td></tr>)}</tbody></table></div>
+      )}
+      <ul className={`space-y-2 ${view === "tabel" ? "hidden" : ""}`}>
         {list.length === 0 && <li className="text-sm text-slate-400">Tidak ada data.</li>}
         {list.map((x) => (
           <li key={x.id} className="card flex items-center gap-3 !p-3">

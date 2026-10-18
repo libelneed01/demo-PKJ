@@ -4,6 +4,7 @@ import * as D from "@/lib/data";
 import { Dashboard, Absensi, Tiket, Info } from "@/components/Pages";
 import Tamu from "@/components/Tamu";
 import Keuangan from "@/components/Keuangan";
+import { Penghuni, Maintenance, Fasilitas, Keamanan, Laporan } from "@/components/Modules";
 
 export default function Home() {
   const [role, setRole] = useState(null);
@@ -15,7 +16,10 @@ export default function Home() {
   const [info, setInfo] = useState(D.INFO);
   const [tiket, setTiket] = useState(D.ADU);
   const [att, setAtt] = useState(D.ATT0);
-  const S = { tamu, setTamu, exp, setExp, don, setDon, info, setInfo, tiket, setTiket, att, setAtt };
+  const [wo, setWo] = useState(D.WO);
+  const [book, setBook] = useState(D.BOOK);
+  const [insiden, setInsiden] = useState(D.INSIDEN);
+  const S = { tamu, setTamu, exp, setExp, don, setDon, info, setInfo, tiket, setTiket, att, setAtt, wo, setWo, book, setBook, insiden, setInsiden };
   const go = (p, s = null) => { setPage(p); setSub(s); window.scrollTo(0, 0); };
 
   if (!role) {
@@ -46,6 +50,11 @@ export default function Home() {
     security: <Absensi S={S} kind="security" />,
     kebersihan: <Absensi S={S} kind="kebersihan" />,
     tiket: <Tiket S={S} role={role} />,
+    cctv: <Keamanan S={S} />,
+    penghuni: <Penghuni />,
+    maintenance: <Maintenance S={S} />,
+    fasilitas: <Fasilitas S={S} />,
+    laporan: <Laporan S={S} />,
   };
   return (
     <div className="min-h-screen md:flex">
