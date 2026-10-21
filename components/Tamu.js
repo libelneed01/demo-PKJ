@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import * as D from "@/lib/data";
-import { Stat, Modal, Hint, ExportBtn } from "./Charts";
+import { Stat, Modal, Hint, Bars, ExportBtn } from "./Charts";
 import { Ktp, Kendaraan } from "./Photos";
 import DateRange, { inRange, ALL } from "./DateRange";
 
@@ -32,6 +32,7 @@ export default function Tamu({ S }) {
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {D.JENIS_KENDARAAN.map((j) => <Stat key={j} label={j} value={tamu.filter((x) => x.jenis === j).length} hint="Ketuk untuk lihat daftar" onClick={() => { setJf(j); setTab("riwayat"); }} />)}
         </div>
+        <div className="card mt-3"><Bars unit=" kendaraan" data={D.JENIS_KENDARAAN.map((j, i) => ({ label: j, value: tamu.filter((x) => x.jenis === j).length, color: ["#0B2545", "#4A7FC1", "#2FA37A", "#E0A526"][i] }))} /></div>
       </section>
       <form onSubmit={add} className="card grid gap-3 sm:grid-cols-2">
         <h3 className="font-bold text-pine sm:col-span-2">Kendaraan masuk <span className="text-xs font-normal text-slate-400">· jam masuk otomatis {nowHM()}</span></h3>

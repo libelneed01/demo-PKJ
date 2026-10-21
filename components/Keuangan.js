@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import * as D from "@/lib/data";
-import { Stat, Modal, Hint, Donut, Bars, ExportBtn, rupiah } from "./Charts";
+import { Stat, Modal, Hint, Donut, Bars, Cols, ExportBtn, rupiah } from "./Charts";
 import DateRange, { inRange, ALL, bulanIni } from "./DateRange";
 
 const Chip = ({ on, ...p }) => <button {...p} className={`rounded-full px-4 py-1.5 text-sm font-semibold ${on ? "bg-moss text-white" : "bg-mist text-moss"}`} />;
@@ -94,6 +94,10 @@ function Neraca({ S }) {
         <Row l="Pengeluaran bulan ini" v={"− " + rupiah(k.keluar)} c={D.C.bad} />
         <Row l="Cadangan kas pengurus" v={rupiah(D.CADANGAN)} />
         <Row l="Batas minimum kas" v={rupiah(D.MIN_KAS)} />
+      </div>
+      <div className="card">
+        <h3 className="mb-2 font-bold text-pine">Pemasukan vs pengeluaran (juta rupiah)</h3>
+        <Cols unit=" jt" series={[{ name: "Pemasukan", color: D.C.ok }, { name: "Pengeluaran", color: D.C.bad }]} data={D.KEYS6.map((key, i) => ({ label: D.BULAN6[i], v: [D.MASUK6[i], Math.round((D.EXP_OLD[key] ?? S.exp.filter((e) => e.tgl.startsWith(key)).reduce((a, e) => a + e.nominal, 0)) / 1e6)] }))} />
       </div>
       <Hint><p>Hijau: saldo di atas 1,5 kali batas minimum. Kuning: di antara batas minimum dan 1,5 kali. Merah: di bawah batas minimum. Coba tambah pengeluaran besar untuk melihat warna berubah.</p></Hint>
     </div>
