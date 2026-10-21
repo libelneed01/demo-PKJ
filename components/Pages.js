@@ -27,7 +27,9 @@ export function Dashboard({ role, go, S }) {
   const mIni = S.exp.filter((e) => e.tgl.startsWith(D.THIS_MONTH)).reduce((a, e) => a + e.nominal, 0);
   const tunggak = Object.values(D.IPL).reduce((a, r) => a + r.menunggak, 0);
   const latest = S.info[0];
+  const unpaid = S.tagihan.filter((t) => t[1] === "Menunggak").length;
   const cards = {
+    warga: [["Tagihan IPL saya", unpaid ? rupiah(unpaid * D.IPL_FEE) : "Lunas", "tagihan", null, unpaid ? D.C.bad : D.C.ok, unpaid ? `${unpaid} bulan belum dibayar` : "Tidak ada tunggakan"], ["Pengumuman", S.info.length, "info"], ["Pengaduan saya", S.tiket.filter((t) => t.pelapor === "Bpk. Hendra").length, "tiket"], ["Reservasi saya", S.book.filter((b) => b.pemesan === "Bpk. Hendra").length, "fasilitas"]],
     rw: [["Tamu sedang di dalam", dalam, "tamu"], ["Pengaduan belum ditangani", open("rw"), "tiket"], ["Security hadir hari ini", `${hs}/15`, "security"], ["Petugas kebersihan hadir", `${hk}/9`, "kebersihan"], ["Saldo kas", rupiah(k.saldo), "keuangan", "neraca", tn.c, tn.t]],
     keamanan: [["Tamu sedang di dalam", dalam, "tamu"], ["Security hadir", `${hs}/15`, "security"], ["Pengaduan keamanan", open("keamanan"), "tiket", null, null, "Belum ditangani"]],
     kebersihan: [["Petugas hadir", `${hk}/9`, "kebersihan"], ["Hadir di RW 29", area("RW 29"), "kebersihan"], ["Hadir di RW 31", area("RW 31"), "kebersihan"], ["Pengaduan kebersihan", open("kebersihan"), "tiket", null, null, "Belum ditangani"]],
@@ -129,7 +131,7 @@ export function Tiket({ S, role }) {
   const { tiket, setTiket } = S;
   const [fs, setFs] = useState("Semua"), [fk, setFk] = useState("Semua"), [sel, setSel] = useState(null), [note, setNote] = useState(""), [rg, setRg] = useState(ALL);
   const kats = D.SCOPE[role] || D.KAT_ADU;
-  const E = { judul: "", kat: kats[0], lokasi: "", desk: "", pelapor: "", foto: false };
+  const E = { judul: "", kat: kats[0], lokasi: "", desk: "", pelapor: role === "warga" ? "Bpk. Hendra" : "", foto: false };
   const [f, setF] = useState(E);
   const list = scope(role, tiket).filter((t) => (fs === "Semua" || t.status === fs) && (fk === "Semua" || t.kat === fk) && inRange(t.tgl, rg));
   const t = tiket.find((x) => x.id === sel);
@@ -221,6 +223,29 @@ export function Info({ S, role }) {
           <p className="mt-3 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800">Koordinasi keamanan: {x.konf}</p>
         </Modal>
       )}
+    </div>
+  );
+}
+
+export function Tagihan({ S }) {
+  const { tagihan, setTagihan } = S;
+  const unpaid = tagihan.filter((t) => t[1] === "Menunggak").length;
+  return (
+    <div className="space-y-4">
+      <div className="card">
+        <p className="text-sm text-slate-500">Rumah B-12 · Bpk. Hendra · RW 29</p>
+        <p className="text-3xl font-extrabold" style={{ color: unpaid ? D.C.bad : D.C.ok }}>{unpaid ? rupiah(unpaid * D.IPL_FEE) : "Semua lunas"}</p>
+        <p className="text-sm text-slate-500">{unpaid ? `${unpaid} bulan belum dibayar` : "Terima kasih, tidak ada tunggakan."}</p>
+        {unpaid > 0 && <button className="btn mt-3" onClick={() => setTagihan(tagihan.map((t) => [t[0], "Lunas"]))}>Bayar semua (simulasi)</button>}
+      </div>
+      <ul className="space-y-2">
+        {tagihan.map(([b, s]) => (
+          <li key={b} className="card flex items-center justify-between !p-3 text-sm">
+            <span><b className="text-pine">IPL {b} 2026</b><br /><span className="text-slate-500">{rupiah(D.IPL_FEE)}</span></span>
+            {s === "Lunas" ? <span className="rounded-full px-2 py-1 text-xs font-semibold text-white" style={{ background: D.C.ok }}>Lunas</span> : <button className="btn" onClick={() => setTagihan(tagihan.map((t) => (t[0] === b ? [b, "Lunas"] : t)))}>Bayar</button>}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

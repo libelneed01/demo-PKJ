@@ -1,13 +1,16 @@
 "use client";
 import { useState } from "react";
 import * as D from "@/lib/data";
-import { Dashboard, Absensi, Tiket, Info } from "@/components/Pages";
+import { Dashboard, Absensi, Tiket, Info, Tagihan } from "@/components/Pages";
+import Login from "@/components/Login";
 import Tamu from "@/components/Tamu";
 import Keuangan from "@/components/Keuangan";
 import { Penghuni, Maintenance, Fasilitas, Keamanan, Laporan } from "@/components/Modules";
 
 export default function Home() {
+  const [acct, setAcct] = useState(null);
   const [role, setRole] = useState(null);
+  const [tagihan, setTagihan] = useState(D.TAGIHAN0);
   const [page, setPage] = useState("dashboard");
   const [sub, setSub] = useState(null);
   const [tamu, setTamu] = useState(D.TAMU);
@@ -19,24 +22,27 @@ export default function Home() {
   const [wo, setWo] = useState(D.WO);
   const [book, setBook] = useState(D.BOOK);
   const [insiden, setInsiden] = useState(D.INSIDEN);
-  const S = { tamu, setTamu, exp, setExp, don, setDon, info, setInfo, tiket, setTiket, att, setAtt, wo, setWo, book, setBook, insiden, setInsiden };
+  const S = { tamu, setTamu, exp, setExp, don, setDon, info, setInfo, tiket, setTiket, att, setAtt, wo, setWo, book, setBook, insiden, setInsiden, tagihan, setTagihan };
   const go = (p, s = null) => { setPage(p); setSub(s); window.scrollTo(0, 0); };
 
+  const keluar = () => { setAcct(null); setRole(null); setPage("dashboard"); };
+  if (!acct) return <Login onLogin={(a) => { setAcct(a); if (a === "warga") { setRole("warga"); go("dashboard"); } }} />;
   if (!role) {
     return (
       <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 p-6">
         <div className="text-center">
-          <img src="/logo.png" alt="Logo Pesona Khayangan Juanda" className="mx-auto h-40 w-auto" />
-          <h1 className="sr-only">Pesona Khayangan Juanda</h1>
-          <p className="mt-2 text-slate-500">Pengelolaan komplek perumahan. Pilih peran untuk masuk.</p>
+          <img src="/logo.png" alt="Logo Pesona Khayangan Juanda" className="mx-auto h-32 w-auto" />
+          <h1 className="mt-2 text-xl font-extrabold text-pine">Selamat datang, Pengurus</h1>
+          <p className="text-slate-500">Pilih peran yang Anda jalankan hari ini.</p>
         </div>
         <div className="grid gap-3">
-          {Object.entries(D.ROLES).map(([id, r]) => (
+          {Object.entries(D.ROLES).filter(([id]) => id !== "warga").map(([id, r]) => (
             <button key={id} onClick={() => { setRole(id); go("dashboard"); }} className="card text-left transition hover:ring-moss focus-visible:outline focus-visible:outline-2 focus-visible:outline-brass">
               <p className="font-bold text-pine">{r.label}</p><p className="text-sm text-slate-500">{r.desc}</p>
             </button>
           ))}
         </div>
+        <button onClick={keluar} className="text-sm font-semibold text-moss underline">Keluar</button>
       </main>
     );
   }
@@ -55,6 +61,7 @@ export default function Home() {
     maintenance: <Maintenance S={S} />,
     fasilitas: <Fasilitas S={S} />,
     laporan: <Laporan S={S} />,
+    tagihan: <Tagihan S={S} />,
   };
   return (
     <div className="min-h-screen md:flex">
@@ -64,7 +71,7 @@ export default function Home() {
             <img src="/logo.png" alt="Logo Pesona Khayangan Juanda" className="h-9 w-9 rounded-lg object-cover object-top" />
             <div><p className="text-sm font-extrabold leading-tight text-pine">Pesona Khayangan</p><p className="text-xs text-slate-400">{D.ROLES[role].label}</p></div>
           </div>
-          <button onClick={() => setRole(null)} className="text-xs font-semibold text-moss underline md:mt-3">Ganti peran</button>
+          <div className="flex gap-3 md:mt-3">{acct === "pengurus" && <button onClick={() => setRole(null)} className="text-xs font-semibold text-moss underline">Ganti peran</button>}<button onClick={keluar} className="text-xs font-semibold text-red-500 underline">Keluar</button></div>
         </div>
         <nav className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col md:overflow-visible">
           {menus.map((m) => (
