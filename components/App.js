@@ -3,7 +3,7 @@ import {useState} from 'react';
 import {BarChart,Bar,XAxis,YAxis,Tooltip,ResponsiveContainer,PieChart,Pie,Cell,Legend} from 'recharts';
 import {seed,GROUPS,ASSETS,NOTES} from '../lib/seed';
 import {rp,Badge,Card,In,Sel,Btn,Empty} from './ui';
-import {Warga,Absensi,Parkir} from './Modul';
+import {Warga,Absensi,Parkir,Keu} from './Modul';
 import Login from './Login';
 
 const SEC='Asset & Serah Terima Security',KEB='Asset & Serah Terima Kebersihan';
@@ -45,7 +45,7 @@ function Gate({close,ok}){const [u,setU]=useState('');const [p,setP]=useState(''
  return <div className="fixed inset-0 bg-black/40 grid place-items-center z-40"><Card className="w-80"><In l="User ID" v={u} on={setU}/><In l="Password" type="password" v={p} on={setP}/>{e&&<p className="text-red-600 text-sm mb-2">Kredensial salah</p>}
  <div className="flex gap-2"><Btn onClick={()=>u==='brobar'&&p==='110375'?ok():setE(true)}>Masuk</Btn><Btn c="bg-slate-400" onClick={close}>Batal</Btn></div></Card></div>}
 
-function Panel({ctx}){const {db,setDb,say}=ctx;const mods=['tamu','pengaduan','kerusakan','sampah','izin','pengumuman','shifts','warga','absensi','kendaraan','pelanggaran'];
+function Panel({ctx}){const {db,setDb,say}=ctx;const mods=['tamu','pengaduan','kerusakan','sampah','izin','pengumuman','shifts','warga','absensi','kendaraan','pelanggaran','tunggakan','pengeluaran','bukti'];
  const del=k=>{if(confirm('Hapus data modul '+k+'?')){setDb(d=>({...d,[k]:[]}));say('Data dihapus')}};
  return <div className="grid gap-3"><Card>{mods.map(k=><div key={k} className="flex justify-between items-center py-1 text-sm"><span>{k}: {db[k].length} data</span><button className="text-red-600 underline" onClick={()=>del(k)}>Hapus</button></div>)}</Card>
  <div className="flex gap-2"><Btn c="bg-red-600" onClick={()=>{if(confirm('Hapus SEMUA data testing?')){setDb(d=>({...d,...Object.fromEntries(mods.map(k=>[k,[]]))}));say('Semua data testing dihapus')}}}>Hapus semua data testing</Btn>
@@ -54,7 +54,7 @@ function Panel({ctx}){const {db,setDb,say}=ctx;const mods=['tamu','pengaduan','k
 function Page({page,role,ctx}){
  if(page==='Dashboard'||page==='Dashboard Warga') return <Dash role={role} ctx={ctx}/>;
  if(page==='Tamu') return <Tamu ctx={ctx}/>;
- if(page==='Keuangan') return <Keu ctx={ctx}/>;
+ if(page==='Keuangan') return <Keu ctx={ctx} role={role}/>;
  if(page===SEC) return <Serah type="Security" ctx={ctx}/>;
  if(page===KEB) return <Serah type="Kebersihan" ctx={ctx}/>;
  if(page==='Pengumuman') return <Pengumuman ctx={ctx} warga={role==='Warga'}/>;
@@ -85,6 +85,7 @@ function Dash({role,ctx}){const {db,go}=ctx;const sh=t=>db.shifts.filter(s=>s.ty
  const bar=['Sen','Sel','Rab','Kam','Jum','Sab','Min'].map((d,i)=>({d,v:[12,9,14,11,16,22,db.tamu.length+8][i]}));
  return <div className="grid gap-4">{warn&&<div className="bg-red-50 border border-red-300 text-red-700 rounded-xl p-3 text-sm">Peringatan: ada asset bermasalah / serah terima shift belum di-approve.</div>}
  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">{S.map(([l,v,p])=><button key={l} onClick={()=>go(p)} className="bg-white rounded-2xl p-4 text-left shadow-sm hover:ring-1 ring-slate-300"><p className="text-2xl font-semibold text-slate-800">{v}</p><p className="text-xs text-slate-600">{l}</p></button>)}</div>
+ {role==='Warga'&&<div className="flex flex-wrap gap-2">{['Buat Pengaduan','Ajukan Izin','Lapor Sampah','Lapor Kerusakan'].map(x=><Btn key={x} onClick={()=>go(x)}>{x}</Btn>)}</div>}
  {role!=='Warga'&&<div className="grid md:grid-cols-2 gap-3"><Card><p className="text-sm font-medium mb-2">Tamu minggu ini</p><div className="h-48"><ResponsiveContainer><BarChart data={bar}><XAxis dataKey="d"/><YAxis/><Tooltip/><Bar dataKey="v" fill="#7aa595" radius={4}/></BarChart></ResponsiveContainer></div></Card>
  <Card><p className="text-sm font-medium mb-2">Status IPL</p><div className="h-48"><ResponsiveContainer><PieChart><Pie data={pie} dataKey="v" nameKey="n" outerRadius={65}>{pie.map(x=><Cell key={x.n} fill={x.c}/>)}</Pie><Legend/><Tooltip/></PieChart></ResponsiveContainer></div></Card>{role==='Pengurus RW'&&<Card><p className="text-sm font-medium mb-2">Komposisi warga</p><div className="h-48"><ResponsiveContainer><PieChart><Pie data={['Tinggal','Ngontrak','Ditinggal'].map((n,i)=>({n,v:db.warga.filter(w=>w.status===n).length,c:['#7aa595','#d9b86a','#c9776f'][i]}))} dataKey="v" nameKey="n" outerRadius={65}>{['#7aa595','#d9b86a','#c9776f'].map(c=><Cell key={c} fill={c}/>)}</Pie><Legend/><Tooltip/></PieChart></ResponsiveContainer></div></Card>}</div>}</div>}
 
@@ -97,17 +98,11 @@ function Tamu({ctx}){const {db,up,say}=ctx;const e={nama:'',plat:'',jenis:'Mobil
  {t.keluar?<Badge s="Selesai"/>:<Btn c="bg-yellow-600" onClick={()=>{up('tamu',l=>l.map(x=>x.id===t.id?{...x,keluar:new Date().toTimeString().slice(0,5)}:x));say('Tamu keluar dicatat')}}>Keluar</Btn>}</div>):<Empty/>}</Card>
  {d&&<div className="fixed inset-0 bg-black/40 grid place-items-center z-40" onClick={()=>setD(null)}><Card className="w-80 text-sm"><p className="font-semibold mb-2">{d.nama}</p><p>Plat: {d.plat}</p><p>Jenis: {d.jenis}</p><p>Tujuan: {d.tujuan}</p><p>Masuk: {d.masuk} / Keluar: {d.keluar||'-'}</p><p>Catatan: {d.catatan||'-'}</p></Card></div>}</div>}
 
-function Keu({ctx}){const {db,up,say}=ctx;const min=15000000,s=db.kas.saldo;const st=s<min?'Merah':s<min*1.3?'Kuning':'Hijau';
- return <div className="grid gap-4"><div className="grid sm:grid-cols-3 gap-3"><Card><p className="text-xs">Saldo kas</p><p className="text-xl font-semibold">{rp(s)}</p><Badge s={st}/></Card><Card><p className="text-xs">Batas minimum</p><p className="text-xl font-semibold">{rp(min)}</p></Card><Card><p className="text-xs">IPL menunggak (dari 600 rumah)</p><p className="text-xl font-semibold">{db.ipl.tunggak}</p></Card></div>
- <Card><p className="text-sm font-medium mb-2">Pemasukan vs pengeluaran (juta Rp)</p><div className="h-52"><ResponsiveContainer><BarChart data={db.bulanan}><XAxis dataKey="b"/><YAxis/><Tooltip/><Legend/><Bar dataKey="masuk" fill="#7aa595"/><Bar dataKey="keluar" fill="#3b536b"/></BarChart></ResponsiveContainer></div></Card>
- <Card><Btn onClick={()=>{if(!db.ipl.tunggak)return say('Tidak ada tunggakan');up('ipl',i=>({...i,tunggak:i.tunggak-1,lunas:i.lunas+1}));up('kas',k=>({...k,saldo:k.saldo+250000,masuk:k.masuk+250000}));say('Pembayaran online (simulasi) diterima Rp 250.000')}}>Simulasi bayar online</Btn>
- <Btn c="bg-[#0B1F3A]" onClick={()=>say('Bukti transfer (placeholder) terunggah')} style={{marginLeft:8}}>Upload bukti transfer</Btn></Card></div>}
-
-function Generic({k,ctx,manage}){const {db,up,say}=ctx;const [f,setF]=useState({judul:'',detail:''});const [q,setQ]=useState('');const [c,setC]=useState('');
- const add=()=>{if(!f.judul)return say('Judul wajib diisi');up(k,l=>[{id:Date.now(),...f,status:'Baru',catatan:''},...l]);setF({judul:'',detail:''});say('Laporan terkirim')};
+function Generic({k,ctx,manage}){const {db,up,say}=ctx;const [f,setF]=useState({judul:'',detail:''});const [q,setQ]=useState('');const [c,setC]=useState('');const [tg,setTg]=useState('');
+ const add=()=>{if(!f.judul)return say('Judul wajib diisi');if(k==='kerusakan'&&!tg)return say('Pilih tingkat kerusakan');up(k,l=>[{id:Date.now(),...f,detail:f.detail+(k==='kerusakan'?' · Tingkat: '+tg+' · foto: placeholder':''),status:'Baru',catatan:''},...l]);setF({judul:'',detail:''});setTg('');say('Laporan terkirim')};
  const set=(id,status)=>{up(k,l=>l.map(x=>x.id===id?{...x,status,catatan:c||x.catatan}:x));setC('');say('Status diperbarui')};
  const list=db[k].filter(x=>x.judul.toLowerCase().includes(q.toLowerCase()));
- return <div className="grid md:grid-cols-2 gap-4"><Card><In l="Judul" v={f.judul} on={v=>setF({...f,judul:v})}/><In l="Detail / lokasi" v={f.detail} on={v=>setF({...f,detail:v})}/><Btn onClick={add}>Kirim</Btn></Card>
+ return <div className="grid md:grid-cols-2 gap-4"><Card><In l="Judul" v={f.judul} on={v=>setF({...f,judul:v})}/><In l="Detail / lokasi" v={f.detail} on={v=>setF({...f,detail:v})}/>{k==='kerusakan'&&<Sel l="Tingkat kerusakan" v={tg} on={setTg} o={['Ringan','Sedang','Berat']}/>}{k==='sampah'&&<p className="text-xs text-slate-500 mb-2">Jadwal angkut rutin: Senin &amp; Kamis, 06.00.</p>}<Btn onClick={add}>Kirim</Btn></Card>
  <Card><In l="Cari" v={q} on={setQ}/>{list.length?list.map(x=><div key={x.id} className="border-t py-2 text-sm"><div className="flex justify-between"><b>{x.judul}</b><Badge s={x.status}/></div><p className="text-slate-600">{x.detail}</p>{x.catatan&&<p className="text-xs">Progres: {x.catatan}</p>}
  {manage&&x.status!=='Selesai'&&<div className="mt-1 flex gap-2"><input className="border rounded p-1 flex-1 text-xs" placeholder="Catatan progres" value={c} onChange={e=>setC(e.target.value)}/><Btn c="bg-yellow-600" onClick={()=>set(x.id,'Diproses')}>Proses</Btn><Btn onClick={()=>set(x.id,'Selesai')}>Selesai</Btn></div>}</div>):<Empty/>}</Card></div>}
 
