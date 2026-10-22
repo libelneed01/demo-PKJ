@@ -22,7 +22,7 @@ export default function App(){
  const say=m=>{setToast(m);setTimeout(()=>setToast(''),2200)};
  const up=(k,fn)=>setDb(d=>({...d,[k]:fn(d[k])}));
  const ctx={db,up,say,go:setPage,setDb};
- const Logo=()=><div className="flex items-center gap-2"><div className="w-8 h-8 rounded-full bg-[#1E2F3F] text-white grid place-items-center text-[11px] font-medium">PK</div><span className="font-semibold text-sm">Pesona Khayangan Juanda</span></div>;
+ const Logo=()=><img src="/logo.png" alt="Pesona Khayangan Juanda" className="h-14 w-auto"/>;
  let body;
  if(panel) body=<div className="max-w-2xl mx-auto p-4"><div className="flex justify-between mb-4"><h1 className="text-lg font-semibold">Panel Pengelola Data Demo</h1><button className="text-sm underline" onClick={()=>setPanel(false)}>Kembali</button></div><Panel ctx={ctx}/></div>; 
  else if(!role) body=<Login roles={Object.keys(NAV)} onLogin={r=>{setRole(r);setPage(NAV[r][0])}}/>;
@@ -33,7 +33,7 @@ export default function App(){
    {NAV[role].map(n=><button key={n} onClick={()=>{setPage(n);setMenu(false)}} className={`block w-full text-left px-3 py-2 rounded-lg text-sm ${page===n?'bg-emerald-50 text-emerald-900 font-medium':'hover:bg-slate-50'}`}>{n}</button>)}
    <button onClick={()=>{setRole(null);setMenu(false)}} className="block w-full text-left px-3 py-2 mt-4 text-sm text-slate-400">Keluar</button>
   </aside>
-  <main className="flex-1 p-4 max-w-5xl w-full mx-auto"><button className="md:hidden mb-3 bg-white border border-slate-200 text-slate-700 rounded-lg px-3 py-1 text-sm" onClick={()=>setMenu(!menu)}>☰ Menu</button>
+  <main className="flex-1 p-4 max-w-5xl w-full mx-auto"><div className="md:hidden flex items-center justify-between mb-3"><button className="bg-white border border-slate-200 text-slate-700 rounded-lg px-3 py-1 text-sm" onClick={()=>setMenu(!menu)}>☰ Menu</button><img src="/logo.png" alt="" className="h-10 w-auto"/></div>
    <h1 className="text-xl font-semibold mb-4">{page}</h1><Page page={page} role={role} ctx={ctx}/></main></div>;
  return <div className="min-h-screen flex flex-col">{body}
   <footer className="text-center text-xs text-slate-500 py-4">Prototype Demo dibuat oleh : A0/3 - dibuat karena iseng <button aria-label="opsi" onClick={()=>setGear(true)} className="opacity-30 text-[10px] ml-1">⚙</button></footer>
@@ -71,7 +71,25 @@ function Page({page,role,ctx}){
  return <Card><p className="text-sm text-slate-600">Modul "{page}" belum dimuat di versi inti ini.</p></Card>;
 }
 
-function Dash({role,ctx}){const {db,go}=ctx;const sh=t=>db.shifts.filter(s=>s.type===t);const hd=(t,r)=>db.absensi.filter(x=>x.type===t&&!x.keluar&&(!r||x.rw===r)).length;const tl=db.absensi.filter(x=>x.type==='Security'&&x.telat).length;
+function Dash({role,ctx}){const {db,go}=ctx;const [dr,setDr]=useState(null);
+ const L=x=>x.map(y=>`${y.judul} - ${y.detail} (${y.status})`);const bl=x=>x.filter(y=>y.status!=='Selesai');
+ const dl=l=>{
+  if(/^Warga /.test(l))return db.warga.filter(w=>w.status===l.slice(6)).map(w=>`${w.nama} · ${w.blok}`);
+  if(/rumah saya/.test(l))return ['Rumah B7/21: IPL bulan ini Lunas'];
+  if(/^Tamu/.test(l))return db.tamu.filter(t=>!t.keluar||l==='Tamu hari ini').map(t=>`${t.nama} · ${t.plat} · ${t.jenis} · masuk ${t.masuk}${t.keluar?' · keluar '+t.keluar:''} · tujuan ${t.tujuan}`);
+  if(/^Pengaduan/.test(l))return L(bl(db.pengaduan));
+  if(/^Kerusakan/.test(l))return L(bl(db.kerusakan));
+  if(/^Sampah/.test(l))return L(bl(db.sampah));
+  if(/^Izin/.test(l))return db.izin.filter(i=>i.stage<3&&!i.ditolak).map(i=>`${i.judul} (${i.jenis}) - menunggu ${ST[i.stage]}`);
+  if(/^Pengumuman/.test(l))return db.pengumuman.map(p=>`${p.judul}: ${p.isi}`);
+  if(/Asset/.test(l))return db.shifts.filter(s=>s.bad&&s.status!=='Selesai').map(s=>`${s.type} ${s.group}: ${s.ket||'asset bermasalah'}`);
+  if(/Serah terima/.test(l))return db.shifts.filter(s=>s.status==='Menunggu Approval').map(s=>`${s.type} ${s.group} - ${s.ket||'catatan lengkap, menunggu approval'}`);
+  if(/hadir|Hadir/.test(l)){const t=/Kebersihan|RW/.test(l)?'Kebersihan':'Security';const r=(l.match(/RW \d+/)||[])[0];return db.absensi.filter(a=>a.type===t&&(!r||a.rw===r)).map(a=>`${a.group}${a.rw?' · '+a.rw:''} · masuk ${a.masuk}${a.telat?' (TERLAMBAT)':''}${a.keluar?' · keluar '+a.keluar:' · bertugas'}`)}
+  if(/parkir/.test(l))return bl(db.pelanggaran).map(x=>`${x.plat} - ${x.jenis} (${x.waktu}) ${x.catatan}`);
+  if(/^IPL (Lunas|Terlambat)/.test(l))return ['Jumlah: '+(l.includes('Lunas')?db.ipl.lunas:db.ipl.telat)+' rumah dari 600'];
+  if(/IPL|Tunggakan/.test(l))return [...db.tunggakan.slice(0,10).map(x=>`${x.blok} · ${x.pemilik} · ${x.rw} · ${x.bulan} bulan`),'... dan '+Math.max(0,db.tunggakan.length-10)+' rumah lainnya'];
+  return ['Saldo kas: '+rp(db.kas.saldo),'Total pemasukan: '+rp(db.kas.masuk),'Total pengeluaran: '+rp(db.kas.keluar),'Batas minimum: Rp 15.000.000',...db.pengeluaran.map(x=>`${x.tgl} · ${x.ket} · ${rp(x.jml)}`)]};
+ const sh=t=>db.shifts.filter(s=>s.type===t);const hd=(t,r)=>db.absensi.filter(x=>x.type===t&&!x.keluar&&(!r||x.rw===r)).length;const tl=db.absensi.filter(x=>x.type==='Security'&&x.telat).length;
  const m={tamu:db.tamu.filter(t=>!t.keluar).length,adu:open(db.pengaduan),rus:open(db.kerusakan),sam:open(db.sampah),izin:db.izin.filter(i=>i.stage<3&&!i.ditolak).length,
   pS:sh('Security').filter(s=>s.status==='Menunggu Approval').length,bS:sh('Security').filter(s=>s.bad&&s.status!=='Selesai').length,
   pK:sh('Kebersihan').filter(s=>s.status==='Menunggu Approval').length,bK:sh('Kebersihan').filter(s=>s.bad&&s.status!=='Selesai').length};
@@ -83,11 +101,11 @@ function Dash({role,ctx}){const {db,go}=ctx;const sh=t=>db.shifts.filter(s=>s.ty
  const warn=(m.pS+m.pK+m.bS+m.bK)>0&&role!=='Warga'&&role!=='Bendahara';
  const pie=[{n:'Lunas',v:db.ipl.lunas,c:'#7aa595'},{n:'Terlambat',v:db.ipl.telat,c:'#d9b86a'},{n:'Menunggak',v:db.ipl.tunggak,c:'#c9776f'}];
  const bar=['Sen','Sel','Rab','Kam','Jum','Sab','Min'].map((d,i)=>({d,v:[12,9,14,11,16,22,db.tamu.length+8][i]}));
- return <div className="grid gap-4">{warn&&<div className="bg-red-50 border border-red-300 text-red-700 rounded-xl p-3 text-sm">Peringatan: ada asset bermasalah / serah terima shift belum di-approve.</div>}
- <div className="grid grid-cols-2 md:grid-cols-3 gap-3">{S.map(([l,v,p])=><button key={l} onClick={()=>go(p)} className="bg-white rounded-2xl p-4 text-left shadow-sm hover:ring-1 ring-slate-300"><p className="text-2xl font-semibold text-slate-800">{v}</p><p className="text-xs text-slate-600">{l}</p></button>)}</div>
+ return <div className="grid gap-4">{dr&&<div className="fixed inset-0 bg-black/40 grid place-items-center z-40 p-4" onClick={()=>setDr(null)}><Card className="w-full max-w-md max-h-[80vh] overflow-y-auto text-sm"><div onClick={e=>e.stopPropagation()}><p className="font-semibold mb-2">{dr.l}</p>{dl(dr.l).length?dl(dr.l).map((x,i)=><p key={i} className="border-t py-1.5">{x}</p>):<Empty/>}<div className="flex gap-2 mt-3"><Btn onClick={()=>{go(dr.page);setDr(null)}}>Buka modul lengkap</Btn><Btn c="bg-slate-400" onClick={()=>setDr(null)}>Tutup</Btn></div></div></Card></div>}{warn&&<div className="bg-red-50 border border-red-300 text-red-700 rounded-xl p-3 text-sm">Peringatan: ada asset bermasalah / serah terima shift belum di-approve.</div>}
+ <div className="grid grid-cols-2 md:grid-cols-3 gap-3">{S.map(([l,v,p])=><button key={l} onClick={()=>setDr({l,page:p})} className="bg-white rounded-2xl p-4 text-left shadow-sm hover:ring-1 ring-slate-300"><p className="text-2xl font-semibold text-slate-800">{v}</p><p className="text-xs text-slate-600">{l}</p></button>)}</div>
  {role==='Warga'&&<div className="flex flex-wrap gap-2">{['Buat Pengaduan','Ajukan Izin','Lapor Sampah','Lapor Kerusakan'].map(x=><Btn key={x} onClick={()=>go(x)}>{x}</Btn>)}</div>}
- {role!=='Warga'&&<div className="grid md:grid-cols-2 gap-3"><Card><p className="text-sm font-medium mb-2">Tamu minggu ini</p><div className="h-48"><ResponsiveContainer><BarChart data={bar}><XAxis dataKey="d"/><YAxis/><Tooltip/><Bar dataKey="v" fill="#7aa595" radius={4}/></BarChart></ResponsiveContainer></div></Card>
- <Card><p className="text-sm font-medium mb-2">Status IPL</p><div className="h-48"><ResponsiveContainer><PieChart><Pie data={pie} dataKey="v" nameKey="n" outerRadius={65}>{pie.map(x=><Cell key={x.n} fill={x.c}/>)}</Pie><Legend/><Tooltip/></PieChart></ResponsiveContainer></div></Card>{role==='Pengurus RW'&&<Card><p className="text-sm font-medium mb-2">Komposisi warga</p><div className="h-48"><ResponsiveContainer><PieChart><Pie data={['Tinggal','Ngontrak','Ditinggal'].map((n,i)=>({n,v:db.warga.filter(w=>w.status===n).length,c:['#7aa595','#d9b86a','#c9776f'][i]}))} dataKey="v" nameKey="n" outerRadius={65}>{['#7aa595','#d9b86a','#c9776f'].map(c=><Cell key={c} fill={c}/>)}</Pie><Legend/><Tooltip/></PieChart></ResponsiveContainer></div></Card>}</div>}</div>}
+ {role!=='Warga'&&<div className="grid md:grid-cols-2 gap-3"><Card><p className="text-sm font-medium mb-2">Tamu minggu ini</p><div className="h-48"><ResponsiveContainer><BarChart data={bar}><XAxis dataKey="d"/><YAxis/><Tooltip/><Bar dataKey="v" fill="#7aa595" radius={4} cursor="pointer" onClick={()=>setDr({l:'Tamu hari ini',page:'Tamu'})}/></BarChart></ResponsiveContainer></div></Card>
+ <Card><p className="text-sm font-medium mb-2">Status IPL</p><div className="h-48"><ResponsiveContainer><PieChart><Pie data={pie} dataKey="v" nameKey="n" outerRadius={65} cursor="pointer" onClick={d=>setDr({l:'IPL '+(d.n||d.payload?.n),page:'Keuangan'})}>{pie.map(x=><Cell key={x.n} fill={x.c}/>)}</Pie><Legend/><Tooltip/></PieChart></ResponsiveContainer></div></Card>{role==='Pengurus RW'&&<Card><p className="text-sm font-medium mb-2">Komposisi warga</p><div className="h-48"><ResponsiveContainer><PieChart><Pie data={['Tinggal','Ngontrak','Ditinggal'].map((n,i)=>({n,v:db.warga.filter(w=>w.status===n).length,c:['#7aa595','#d9b86a','#c9776f'][i]}))} dataKey="v" nameKey="n" outerRadius={65} cursor="pointer" onClick={d=>setDr({l:'Warga '+(d.n||d.payload?.n),page:'Warga & Rumah'})}>{['#7aa595','#d9b86a','#c9776f'].map(c=><Cell key={c} fill={c}/>)}</Pie><Legend/><Tooltip/></PieChart></ResponsiveContainer></div></Card>}</div>}</div>}
 
 function Tamu({ctx}){const {db,up,say}=ctx;const e={nama:'',plat:'',jenis:'Mobil pribadi',tujuan:'',catatan:''};const [f,setF]=useState(e);const [q,setQ]=useState('');const [d,setD]=useState(null);const s=k=>v=>setF({...f,[k]:v});
  const save=()=>{if(!f.nama||!f.plat||!f.tujuan)return say('Nama, plat, dan tujuan wajib diisi');up('tamu',l=>[{...f,id:Date.now(),masuk:new Date().toTimeString().slice(0,5),keluar:null},...l]);setF(e);say('Tamu tersimpan')};
@@ -98,13 +116,13 @@ function Tamu({ctx}){const {db,up,say}=ctx;const e={nama:'',plat:'',jenis:'Mobil
  {t.keluar?<Badge s="Selesai"/>:<Btn c="bg-yellow-600" onClick={()=>{up('tamu',l=>l.map(x=>x.id===t.id?{...x,keluar:new Date().toTimeString().slice(0,5)}:x));say('Tamu keluar dicatat')}}>Keluar</Btn>}</div>):<Empty/>}</Card>
  {d&&<div className="fixed inset-0 bg-black/40 grid place-items-center z-40" onClick={()=>setD(null)}><Card className="w-80 text-sm"><p className="font-semibold mb-2">{d.nama}</p><p>Plat: {d.plat}</p><p>Jenis: {d.jenis}</p><p>Tujuan: {d.tujuan}</p><p>Masuk: {d.masuk} / Keluar: {d.keluar||'-'}</p><p>Catatan: {d.catatan||'-'}</p></Card></div>}</div>}
 
-function Generic({k,ctx,manage}){const {db,up,say}=ctx;const [f,setF]=useState({judul:'',detail:''});const [q,setQ]=useState('');const [c,setC]=useState('');const [tg,setTg]=useState('');
+function Generic({k,ctx,manage}){const {db,up,say}=ctx;const [f,setF]=useState({judul:'',detail:''});const [q,setQ]=useState('');const [c,setC]=useState('');const [tg,setTg]=useState('');const [dm,setDm]=useState(null);
  const add=()=>{if(!f.judul)return say('Judul wajib diisi');if(k==='kerusakan'&&!tg)return say('Pilih tingkat kerusakan');up(k,l=>[{id:Date.now(),...f,detail:f.detail+(k==='kerusakan'?' · Tingkat: '+tg+' · foto: placeholder':''),status:'Baru',catatan:''},...l]);setF({judul:'',detail:''});setTg('');say('Laporan terkirim')};
  const set=(id,status)=>{up(k,l=>l.map(x=>x.id===id?{...x,status,catatan:c||x.catatan}:x));setC('');say('Status diperbarui')};
  const list=db[k].filter(x=>x.judul.toLowerCase().includes(q.toLowerCase()));
  return <div className="grid md:grid-cols-2 gap-4"><Card><In l="Judul" v={f.judul} on={v=>setF({...f,judul:v})}/><In l="Detail / lokasi" v={f.detail} on={v=>setF({...f,detail:v})}/>{k==='kerusakan'&&<Sel l="Tingkat kerusakan" v={tg} on={setTg} o={['Ringan','Sedang','Berat']}/>}{k==='sampah'&&<p className="text-xs text-slate-500 mb-2">Jadwal angkut rutin: Senin &amp; Kamis, 06.00.</p>}<Btn onClick={add}>Kirim</Btn></Card>
- <Card><In l="Cari" v={q} on={setQ}/>{list.length?list.map(x=><div key={x.id} className="border-t py-2 text-sm"><div className="flex justify-between"><b>{x.judul}</b><Badge s={x.status}/></div><p className="text-slate-600">{x.detail}</p>{x.catatan&&<p className="text-xs">Progres: {x.catatan}</p>}
- {manage&&x.status!=='Selesai'&&<div className="mt-1 flex gap-2"><input className="border rounded p-1 flex-1 text-xs" placeholder="Catatan progres" value={c} onChange={e=>setC(e.target.value)}/><Btn c="bg-yellow-600" onClick={()=>set(x.id,'Diproses')}>Proses</Btn><Btn onClick={()=>set(x.id,'Selesai')}>Selesai</Btn></div>}</div>):<Empty/>}</Card></div>}
+ <Card><In l="Cari" v={q} on={setQ}/>{list.length?list.map(x=><div key={x.id} className="border-t py-2 text-sm"><div className="flex justify-between"><button className="font-semibold text-left" onClick={()=>setDm(x)}>{x.judul}</button><Badge s={x.status}/></div><p className="text-slate-600">{x.detail}</p>{x.catatan&&<p className="text-xs">Progres: {x.catatan}</p>}
+ {manage&&x.status!=='Selesai'&&<div className="mt-1 flex gap-2"><input className="border rounded p-1 flex-1 text-xs" placeholder="Catatan progres" value={c} onChange={e=>setC(e.target.value)}/><Btn c="bg-yellow-600" onClick={()=>set(x.id,'Diproses')}>Proses</Btn><Btn onClick={()=>set(x.id,'Selesai')}>Selesai</Btn></div>}</div>):<Empty/>}</Card>{dm&&<div className="fixed inset-0 bg-black/40 grid place-items-center z-40" onClick={()=>setDm(null)}><Card className="w-80 text-sm"><p className="font-semibold">{dm.judul}</p><p className="my-1"><Badge s={dm.status}/></p><p>{dm.detail||'-'}</p><p className="text-xs mt-2">Catatan progres: {dm.catatan||'Belum ada catatan'}</p></Card></div>}</div>}
 
 const ST=['RT','RW','Keamanan','Selesai'];
 function Izin({ctx}){const {db,up,say}=ctx;const [f,setF]=useState({judul:'',jenis:'Renovasi'});const [c,setC]=useState('');

@@ -9,7 +9,7 @@ export default function Login({roles,onLogin}){
   if(!OK[tab].includes(pw.trim().toUpperCase()))return setErr('Kata sandi tidak sesuai');onLogin(tab==='Warga'?'Warga':role)};
  const cls="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm bg-white focus:outline-none focus:border-teal-300 focus:ring-2 focus:ring-teal-100";
  return <div className="flex-1 grid place-items-center p-4"><form onSubmit={go} className="w-full max-w-sm bg-white rounded-3xl border border-slate-100 shadow-[0_8px_40px_rgba(30,47,63,0.07)] p-8">
-  <Mark/><p className="text-center text-[11px] tracking-[0.2em] text-slate-500 mt-2">PESONA KHAYANGAN</p><h1 className="text-center text-2xl font-semibold tracking-wide text-[#1E2F3F]">JUANDA</h1>
+  <img src="/logo.png" alt="Pesona Khayangan Juanda" className="mx-auto w-48 h-auto"/>
   <p className="text-center text-sm text-slate-500 mt-3 mb-5">Masuk ke ruang kerja terverifikasi Anda</p>
   <div className="grid grid-cols-2 bg-slate-100 rounded-xl p-1 mb-5 text-sm">{['Pengurus','Warga'].map(t=><button type="button" key={t} onClick={()=>{setTab(t);setErr('')}} className={`py-2 rounded-lg ${tab===t?'bg-white shadow-sm text-[#1E2F3F] font-medium':'text-slate-500'}`}>{t}</button>)}</div>
   {tab==='Pengurus'&&<label className="block text-xs font-medium text-slate-600 mb-4">Jabatan<select className={cls+' mt-1.5'} value={role} onChange={e=>setRole(e.target.value)}><option value="">Pilih jabatan</option>{roles.filter(r=>r!=='Warga').map(r=><option key={r}>{r}</option>)}</select></label>}
