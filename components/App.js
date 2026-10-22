@@ -1,5 +1,5 @@
 'use client';
-import {useState} from 'react';
+import {useState,useEffect} from 'react';
 import {BarChart,Bar,XAxis,YAxis,Tooltip,ResponsiveContainer,PieChart,Pie,Cell,Legend} from 'recharts';
 import {seed,GROUPS,ASSETS,NOTES} from '../lib/seed';
 import {rp,Badge,Card,In,Sel,Btn,Empty} from './ui';
@@ -18,7 +18,10 @@ const KEY={'Pengaduan':'pengaduan','Buat Pengaduan':'pengaduan','Sampah':'sampah
 const open=l=>l.filter(x=>x.status!=='Selesai').length;
 
 export default function App(){
- const [db,setDb]=useState(seed);const [role,setRole]=useState(null);const [page,setPage]=useState('');
+ const [db,setDb]=useState(seed);const [ready,setReady]=useState(false);
+ useEffect(()=>{try{const s=localStorage.getItem('pkj-db');if(s)setDb(d=>({...d,...JSON.parse(s)}))}catch(e){}setReady(true)},[]);
+ useEffect(()=>{if(ready)try{localStorage.setItem('pkj-db',JSON.stringify(db))}catch(e){}},[db,ready]);
+ const [role,setRole]=useState(null);const [page,setPage]=useState('');
  const [toast,setToast]=useState('');const [menu,setMenu]=useState(false);const [gear,setGear]=useState(false);const [panel,setPanel]=useState(false);
  const say=m=>{setToast(m);setTimeout(()=>setToast(''),2200)};
  const up=(k,fn)=>setDb(d=>({...d,[k]:fn(d[k])}));
