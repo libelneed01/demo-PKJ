@@ -1,8 +1,2 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-body { @apply bg-white text-slate-800; }
-.card { @apply rounded-2xl bg-white p-5 shadow-[0_1px_10px_rgba(11,37,69,0.06)] ring-1 ring-slate-100; }
-.btn { @apply rounded-xl bg-moss px-4 py-2 text-sm font-semibold text-white transition hover:bg-pine active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brass; }
-.btn-ghost { @apply rounded-xl px-3 py-2 text-sm font-semibold text-moss ring-1 ring-slate-200 transition hover:bg-mist active:scale-95 disabled:opacity-40; }
-.input { @apply w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-moss focus:outline-none; }
+@tailwind base;@tailwind components;@tailwind utilities;
+body{background:#EDF4EE;color:#0B1F3A}
