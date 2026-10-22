@@ -5,13 +5,14 @@ import {seed,GROUPS,ASSETS,NOTES} from '../lib/seed';
 import {rp,Badge,Card,In,Sel,Btn,Empty} from './ui';
 import {Warga,Absensi,Parkir,Keu} from './Modul';
 import Login from './Login';
+import KPI from './KPI';
 
 const SEC='Asset & Serah Terima Security',KEB='Asset & Serah Terima Kebersihan';
 const NAV={
- 'Pengurus RW':['Dashboard','Warga & Rumah','Tamu','Keuangan','Pengumuman','Pengaduan','Izin','Kerusakan','Sampah','AI Analisis','Export','Kontak'],
- 'Pengurus Keamanan':['Dashboard','Tamu','Absensi Security',SEC,'Parkir','Pengaduan','Izin','Pengumuman','Kontak'],
- 'Pengurus Kebersihan':['Dashboard','Absensi Kebersihan',KEB,'Sampah','Kerusakan','Pengaduan','Kontak'],
- 'Bendahara':['Dashboard','Keuangan','Export','Kontak'],
+ 'Pengurus RW':['Dashboard','Dashboard KPI','Warga & Rumah','Tamu','Keuangan','Pengumuman','Pengaduan','Izin','Kerusakan','Sampah','AI Analisis','Export','Kontak'],
+ 'Pengurus Keamanan':['Dashboard','Dashboard KPI','Tamu','Absensi Security',SEC,'Parkir','Pengaduan','Izin','Pengumuman','Kontak'],
+ 'Pengurus Kebersihan':['Dashboard','Dashboard KPI','Absensi Kebersihan',KEB,'Sampah','Kerusakan','Pengaduan','Kontak'],
+ 'Bendahara':['Dashboard','Dashboard KPI','Keuangan','Export','Kontak'],
  'Warga':['Dashboard Warga','IPL Saya','Buat Pengaduan','Ajukan Izin','Lapor Sampah','Lapor Kerusakan','Pengumuman','Kontak']};
 const KEY={'Pengaduan':'pengaduan','Buat Pengaduan':'pengaduan','Sampah':'sampah','Lapor Sampah':'sampah','Kerusakan':'kerusakan','Lapor Kerusakan':'kerusakan'};
 const open=l=>l.filter(x=>x.status!=='Selesai').length;
@@ -53,6 +54,7 @@ function Panel({ctx}){const {db,setDb,say}=ctx;const mods=['tamu','pengaduan','k
 
 function Page({page,role,ctx}){
  if(page==='Dashboard'||page==='Dashboard Warga') return <Dash role={role} ctx={ctx}/>;
+ if(page==='Dashboard KPI') return <KPI role={role} ctx={ctx}/>;
  if(page==='Tamu') return <Tamu ctx={ctx}/>;
  if(page==='Keuangan') return <Keu ctx={ctx} role={role}/>;
  if(page===SEC) return <Serah type="Security" ctx={ctx}/>;
