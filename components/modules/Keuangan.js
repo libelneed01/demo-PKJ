@@ -4,6 +4,8 @@ import { useApp } from "@/lib/store";
 import { MIN_KAS, IPL_NOMINAL } from "@/lib/config";
 import { kasInfo, kasChart, iplLabel } from "@/lib/stats";
 import { rp, fmtDate, fmtDT, ymd } from "@/lib/format";
+import { QrPay } from "./WaIpl";
+import { applyPayment } from "@/lib/wa";
 import { Card, Button, Modal, Field, Input, Select, FileInput, SearchBox, DataTable, Pagination, Badge, PageHeader, Stat, BarChart, DonutChart, Tabs, ProgressBar, Icon, tones } from "../ui";
 
 const KAT = ["Gaji Security", "Gaji Kebersihan", "Listrik Fasum", "Perbaikan", "Operasional", "Perlengkapan", "Rapat", "Taman", "Keamanan", "Lain-lain"];
@@ -192,40 +194,7 @@ function HouseInput({ value, onChange, fixed, h }) {
 }
 
 export function Online({ fixedId }) {
-  const { data, update, add, toast } = useApp();
-  const [houseId, setHouseId] = useState(fixedId || "");
-  const [metode, setMetode] = useState(METODE[0]);
-  const [proc, setProc] = useState(null);
-  const h = data.rumah.find((x) => x.id === houseId.trim().toUpperCase());
-  const tagihan = h ? Math.max(1, h.tunggakan) * IPL_NOMINAL : 0;
-  const pay = () => {
-    if (!h) return toast("Pilih rumah yang valid terlebih dahulu", "yellow");
-    if (h.iplStatus === "lunas") return toast("IPL rumah ini sudah lunas", "yellow");
-    setProc("proses");
-    setTimeout(() => {
-      update("rumah", h.id, { iplStatus: "lunas", tunggakan: 0 });
-      add("pembayaran", { houseId: h.id, nama: h.status === "ngontrak" ? h.penyewa : h.owner, nominal: tagihan, metode, status: "Lunas", bukti: "" });
-      setProc("sukses");
-    }, 1600);
-  };
-  return (
-    <Card className="max-w-xl">
-      <h3 className="mb-1 text-base font-bold text-navy">Pembayaran online (simulasi)</h3>
-      <p className="mb-4 text-xs text-slate-500">Tidak ada uang sungguhan yang diproses.</p>
-      <div className="space-y-4">
-        <HouseInput value={houseId} onChange={setHouseId} fixed={!!fixedId} h={h} />
-        <Field label="Metode pembayaran"><Select value={metode} onChange={(e) => setMetode(e.target.value)} options={METODE} /></Field>
-        <Button variant="mint" className="w-full" onClick={pay} disabled={!h || h.iplStatus === "lunas"}>Bayar sekarang {h && h.iplStatus !== "lunas" ? rp(tagihan) : ""}</Button>
-      </div>
-      <Modal open={!!proc} onClose={proc === "sukses" ? () => setProc(null) : undefined} title={proc === "sukses" ? "Pembayaran berhasil" : "Memproses pembayaran"} footer={proc === "sukses" ? <Button onClick={() => setProc(null)}>Selesai</Button> : null}>
-        {proc === "proses" ? (
-          <div className="flex flex-col items-center gap-4 py-6 text-sm text-slate-600"><span className="spin h-10 w-10 rounded-full border-4 border-mint-100 border-t-mint-500" />Menghubungi {metode} (simulasi)…</div>
-        ) : (
-          <div className="flex flex-col items-center gap-3 py-4 text-center"><span className="rounded-full bg-emerald-50 p-4 text-emerald-600"><Icon n="check" className="h-8 w-8" /></span><p className="text-sm text-slate-600">IPL rumah <b>{h && h.id}</b> tercatat lunas. Saldo kas bertambah otomatis.</p></div>
-        )}
-      </Modal>
-    </Card>
-  );
+  return <QrPay fixedId={fixedId} />;
 }
 
 export function Bukti({ fixedId }) {
@@ -244,8 +213,9 @@ export function Bukti({ fixedId }) {
     setBukti(""); setNominal(""); toast("Bukti terkirim. Menunggu verifikasi bendahara.");
   };
   const verify = (p) => {
-    mutate((x) => ({ ...x, pembayaran: x.pembayaran.map((i) => (i.id === p.id ? { ...i, status: "Lunas" } : i)), rumah: x.rumah.map((r) => (r.id === p.houseId ? { ...r, iplStatus: "lunas", tunggakan: 0 } : r)) }));
-    toast("Pembayaran diverifikasi, IPL lunas");
+    const n = Math.max(1, Math.round(p.nominal / IPL_NOMINAL));
+    mutate((x) => applyPayment(x, { houseId: p.houseId, n, metode: "Transfer (bukti)", sumber: "Bukti transfer", payId: p.id }));
+    toast("Pembayaran diverifikasi. Notifikasi WhatsApp dibuat (simulasi).");
   };
   return (
     <div className="space-y-6">

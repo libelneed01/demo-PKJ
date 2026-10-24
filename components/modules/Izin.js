@@ -10,7 +10,7 @@ const tones = { Diajukan: "yellow", "Disetujui RT": "navy", "Disetujui RW": "nav
 const JENIS = ["Renovasi", "Pesta Ulang Tahun", "Pesta Pernikahan", "Kumpulan Keagamaan", "Arisan Keluarga", "Acara Lainnya"];
 const LEVEL = ["RT", "RW", "Keamanan", "Penyelesaian"];
 // role yang boleh memproses tiap tahap (RT dan RW ditangani Pengurus RW pada prototype ini)
-const WHO = { 0: ["rw"], 1: ["rw"], 2: ["keamanan"], 3: ["keamanan", "rw"] };
+const WHO = { 0: ["rt", "rw"], 1: ["rw"], 2: ["keamanan"], 3: ["keamanan", "rw"] };
 const ACT = ["Setujui sebagai RT", "Setujui sebagai RW", "Setujui sebagai Keamanan", "Tandai selesai"];
 
 function Stepper({ row }) {

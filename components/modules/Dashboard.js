@@ -2,8 +2,10 @@
 import { useApp } from "@/lib/store";
 import { ROLES, MIN_KAS, IPL_NOMINAL } from "@/lib/config";
 import { stats, tamuPerHari, kasChart, kasInfo } from "@/lib/stats";
-import { rp, fmtDate } from "@/lib/format";
-import { Card, Stat, BarChart, DonutChart, Badge, Icon, Button, tones } from "../ui";
+import { rp, fmtDate, fmtTime } from "@/lib/format";
+import { rtStats, waLink } from "@/lib/wa";
+import { rtKeyOf, groupName, RT_LIST, rtLabel } from "@/lib/config";
+import { Card, Stat, BarChart, DonutChart, Badge, Icon, Button, ProgressBar, Select, tones } from "../ui";
 
 const Section = ({ title, children }) => (
   <section className="mb-8"><h2 className="mb-3 text-sm font-bold text-navy">{title}</h2><div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">{children}</div></section>
@@ -34,6 +36,62 @@ function Alerts({ list, go }) {
         </button>
       ))}
     </div>
+  );
+}
+
+function RTRekap({ data, go, only }) {
+  const rows = rtStats(data).filter((r) => !only || r.key === only);
+  const total = rows.reduce((a, r) => a + r.terkumpul, 0);
+  return (
+    <Card className="mb-8">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div><h2 className="text-sm font-bold text-navy">IPL per RT bulan ini</h2><p className="text-xs text-slate-500">Terhubung otomatis dengan pembayaran dan rekap di grup WhatsApp. Total terkumpul {rp(total)}.</p></div>
+        <Button variant="soft" icon="msg" onClick={() => go("waIpl", {})}>Buka IPL WhatsApp</Button>
+      </div>
+      <div className="space-y-4">
+        {rows.map((r) => (
+          <button key={r.key} onClick={() => go("waIpl", { thread: "g:" + r.key })} className="block w-full rounded-2xl bg-slate-50 p-4 text-left hover:bg-mint-50">
+            <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-bold text-navy">{r.label}</p><p className="text-sm font-semibold text-navy">{rp(r.terkumpul)} <span className="font-normal text-slate-500">dari {rp(r.target)}</span></p></div>
+            <div className="mt-2"><ProgressBar value={r.pct} tone={r.pct >= 80 ? "green" : r.pct >= 60 ? "yellow" : "red"} /></div>
+            <p className="mt-2 flex flex-wrap gap-x-4 text-xs text-slate-600"><span>Lunas {r.lunas}/{r.total} ({r.pct}%)</span><span>Terlambat {r.terlambat}</span><span>Menunggak {r.menunggak}</span></p>
+          </button>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function RTDash({ data, go, session, setSession }) {
+  const key = session.rt || "29-01";
+  const r = rtStats(data).find((x) => x.key === key);
+  const belum = data.rumah.filter((h) => rtKeyOf(h) === key && h.iplStatus !== "lunas").sort((a, b) => b.tunggakan - a.tunggakan).slice(0, 8);
+  const pesan = (data.waPesan || []).filter((m) => m.thread === "g:" + key).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 4);
+  return (
+    <>
+      <Card className="mb-6"><div className="flex flex-wrap items-end gap-4"><div className="min-w-[220px]"><p className="mb-1.5 text-[13px] font-semibold text-navy">RT yang dikelola</p><Select value={key} onChange={(e) => setSession({ rt: e.target.value })} options={RT_LIST.map((x) => ({ value: x.key, label: rtLabel(x.key) }))} /></div><p className="text-sm text-slate-500">Grup WhatsApp: <b className="text-navy">{groupName(key)}</b></p></div></Card>
+      <Section title="IPL bulan ini">
+        <Stat label="Rumah di RT ini" value={r.total} icon="building" onClick={() => go("waIpl", { thread: "g:" + key })} />
+        <Stat label="Sudah bayar" value={r.lunas} sub={`${r.pct}% terkumpul`} icon="check" tone="green" onClick={() => go("waIpl", { thread: "g:" + key })} />
+        <Stat label="Terlambat" value={r.terlambat} sub="Telat 1 bulan" icon="clock" tone="yellow" onClick={() => go("waIpl", { thread: "g:" + key })} />
+        <Stat label="Menunggak" value={r.menunggak} sub="2 bulan atau lebih" icon="alert" tone={r.menunggak > 10 ? "red" : "yellow"} onClick={() => go("waIpl", { thread: "g:" + key })} />
+      </Section>
+      <Card className="mb-6"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-sm text-slate-500">Total pembayaran terkumpul bulan ini</p><p className="text-3xl font-bold tracking-tight text-navy">{rp(r.terkumpul)}</p></div><Button variant="mint" icon="msg" onClick={() => go("waIpl", { thread: "g:" + key })}>Buka grup WhatsApp</Button></div></Card>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <h3 className="mb-3 text-sm font-bold text-navy">Perlu diingatkan</h3>
+          {belum.length === 0 ? <p className="text-sm text-slate-500">Semua rumah di RT ini sudah lunas.</p> : (
+            <ul className="space-y-2">{belum.map((h) => (
+              <li key={h.id} className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-sm"><span className="min-w-0 truncate"><b className="text-navy">{h.id}</b> {h.status === "ngontrak" ? h.penyewa : h.owner} <Badge tone={h.tunggakan <= 1 ? "yellow" : "red"}>{h.tunggakan} bln</Badge></span>
+                <a href={waLink(h.status === "ngontrak" ? h.penyewaHp : h.hp, `Yth. Bapak/Ibu, IPL rumah BLOK ${h.blok} NO ${h.no} tertunggak ${h.tunggakan} bulan (${rp(h.tunggakan * 100000)}). Mohon dibayar lewat scan QR di grup ${groupName(key)}. Terima kasih.`)} target="_blank" rel="noreferrer" className="shrink-0 text-xs font-semibold text-mint-700 hover:underline">Ingatkan</a></li>
+            ))}</ul>
+          )}
+        </Card>
+        <Card>
+          <h3 className="mb-3 text-sm font-bold text-navy">Aktivitas grup terbaru</h3>
+          <ul className="space-y-2">{pesan.map((m) => <li key={m.id} className="rounded-xl bg-[#D9FDD3] p-3 text-xs text-slate-700"><span className="font-semibold text-emerald-800">{fmtTime(m.at)}</span> {m.text.replace(/\*/g, "").split("\n")[0].slice(0, 110)}</li>)}</ul>
+        </Card>
+      </div>
+    </>
   );
 }
 
@@ -68,6 +126,7 @@ function RWDash({ s, go, data }) {
         <Stat label="IPL menunggak" value={k.menunggak} sub="Telat 2 bulan atau lebih" icon="alert" tone={k.menunggak > 100 ? "red" : "yellow"} onClick={() => go("keuangan", { tab: "tunggakan", level: "menunggak" })} />
         <Stat label="Saldo kas" value={rp(k.saldo)} sub={k.label} icon="wallet" tone={k.tone} onClick={() => go("keuangan", { tab: "neraca" })} />
       </Section>
+      <RTRekap data={data} go={go} />
       <div className="grid gap-4 lg:grid-cols-3">
         <Card><h3 className="mb-3 text-sm font-bold text-navy">Komposisi warga</h3><DonutChart data={comp} center={s.totalRumah} /></Card>
         <Card className="lg:col-span-2"><h3 className="mb-3 text-sm font-bold text-navy">Pemasukan vs pengeluaran</h3><BarChart data={kasChart(data)} money /></Card>
@@ -145,6 +204,7 @@ function BendaharaDash({ s, go, data }) {
         <Stat label="Pengeluaran" value={rp(k.keluar)} icon="wallet" onClick={() => go("keuangan", { tab: "pengeluaran" })} />
         <Stat label="Bukti transfer menunggu" value={data.pembayaran.filter((p) => p.status === "Menunggu verifikasi").length} sub={`${pay} pembayaran tercatat`} icon="file" tone="yellow" onClick={() => go("keuangan", { tab: "bukti" })} />
       </Section>
+      <RTRekap data={data} go={go} />
       <Card><h3 className="mb-3 text-sm font-bold text-navy">Pemasukan vs pengeluaran</h3><BarChart data={kasChart(data)} money /></Card>
     </>
   );
@@ -180,7 +240,7 @@ function WargaDash({ go, data, session }) {
 }
 
 export default function Dashboard() {
-  const { data, role, go, session } = useApp();
+  const { data, role, go, session, setSession } = useApp();
   const s = stats(data);
   const hr = new Date().getHours();
   const greet = hr < 11 ? "Selamat pagi" : hr < 15 ? "Selamat siang" : hr < 18 ? "Selamat sore" : "Selamat malam";
@@ -191,6 +251,7 @@ export default function Dashboard() {
         <p className="mt-1 text-sm text-slate-500">{new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}. Klik angka mana pun untuk melihat detailnya.</p>
       </div>
       {role === "rw" && <RWDash s={s} go={go} data={data} />}
+      {role === "rt" && <RTDash data={data} go={go} session={session} setSession={setSession} />}
       {role === "keamanan" && <KeamananDash s={s} go={go} data={data} />}
       {role === "kebersihan" && <KebersihanDash s={s} go={go} data={data} />}
       {role === "bendahara" && <BendaharaDash s={s} go={go} data={data} />}

@@ -11,7 +11,7 @@ const blank = () => ({ judul: "", kategori: "", isi: "", berlaku: ymd(new Date(D
 
 export default function Pengumuman() {
   const { data, role, add, remove, toast } = useApp();
-  const canPost = role === "rw" || role === "keamanan";
+  const canPost = role === "rw" || role === "rt" || role === "keamanan";
   const [form, setForm] = useState(null);
   const [kat, setKat] = useState("");
   const [del, setDel] = useState(null);

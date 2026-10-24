@@ -17,9 +17,10 @@ import Kontak from "./modules/Kontak";
 import AI from "./modules/AI";
 import Export from "./modules/Export";
 import Panel from "./modules/Panel";
+import WaIpl from "./modules/WaIpl";
 
-const VIEWS = { dashboard: Dashboard, warga: Warga, tamu: Tamu, keuangan: Keuangan, iplSaya: IPLSaya, pengumuman: Pengumuman, absenSecurity: AbsenSecurity, absenKebersihan: AbsenKebersihan, pengaduan: Pengaduan, assetSecurity: AssetSecurity, assetKebersihan: AssetKebersihan, parkir: Parkir, sampah: Sampah, kerusakan: Kerusakan, izin: Izin, kontak: Kontak, ai: AI, export: Export, panel: Panel };
-const DESC = { rw: "Ringkasan seluruh komplek", keamanan: "Pos jaga dan keamanan", kebersihan: "Petugas dan lingkungan", bendahara: "IPL dan kas", warga: "Layanan untuk penghuni" };
+const VIEWS = { dashboard: Dashboard, warga: Warga, tamu: Tamu, keuangan: Keuangan, iplSaya: IPLSaya, waIpl: WaIpl, pengumuman: Pengumuman, absenSecurity: AbsenSecurity, absenKebersihan: AbsenKebersihan, pengaduan: Pengaduan, assetSecurity: AssetSecurity, assetKebersihan: AssetKebersihan, parkir: Parkir, sampah: Sampah, kerusakan: Kerusakan, izin: Izin, kontak: Kontak, ai: AI, export: Export, panel: Panel };
+const DESC = { rw: "Ringkasan seluruh komplek", rt: "IPL dan warga per RT", keamanan: "Pos jaga dan keamanan", kebersihan: "Petugas dan lingkungan", bendahara: "IPL dan kas", warga: "Layanan untuk penghuni" };
 
 export default function App() {
   const { ready, session } = useApp();
@@ -35,7 +36,7 @@ function Login() {
       const h = data.rumah.find((x) => x.status === "tinggal" && x.iplStatus === "menunggak") || data.rumah.find((x) => x.status === "tinggal") || data.rumah[0];
       houseId = h ? h.id : "";
     }
-    login({ role: r, name: ROLES[r], houseId });
+    login({ role: r, name: ROLES[r], houseId, rt: r === "rt" ? "29-01" : undefined });
     toast("Masuk sebagai " + ROLES[r]);
   };
   return (
