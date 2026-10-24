@@ -9,7 +9,7 @@ module.exports = {
         mint: { DEFAULT: "#3DBE8F", 50: "#EEF9F4", 100: "#D9F2E7", 200: "#B5E5D0", 500: "#3DBE8F", 600: "#2FA478", 700: "#26835F" },
       },
       fontFamily: { sans: ["var(--font-jakarta)", "system-ui", "sans-serif"] },
-      boxShadow: { card: "0 1px 2px rgba(18,41,74,.04), 0 8px 24px -8px rgba(18,41,74,.10)" },
+      boxShadow: { card: "0 1px 2px rgba(18,41,74,.04), 0 12px 32px -12px rgba(18,41,74,.14)" },
     },
   },
   plugins: [],

@@ -47,7 +47,21 @@ export function Icon({ n, className = "w-5 h-5" }) {
 
 export function Logo({ size = 36 }) {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/logo.png" alt="Logo Pesona Khayangan Juanda" width={size} height={size} style={{ width: size, height: size, objectFit: "contain" }} />;
+  return <img src="/logo-icon.png" alt="Logo Pesona Khayangan Juanda" width={size} height={size} style={{ width: size, height: size, objectFit: "contain" }} />;
+}
+
+export function Brand({ size = 40, text = true }) {
+  return (
+    <span className="flex items-center gap-3">
+      <Logo size={size} />
+      {text && (
+        <span className="leading-none">
+          <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Pesona Khayangan</span>
+          <span className="mt-1 block text-lg font-extrabold tracking-wide text-navy">JUANDA</span>
+        </span>
+      )}
+    </span>
+  );
 }
 
 const TONE = {
@@ -71,7 +85,7 @@ export function Badge({ tone = "gray", children }) {
 }
 
 export function Card({ children, className = "", pad = "p-5 sm:p-6" }) {
-  return <div className={`rounded-2xl bg-white shadow-card ${pad} ${className}`}>{children}</div>;
+  return <div className={`rounded-3xl bg-white shadow-card ${pad} ${className}`}>{children}</div>;
 }
 
 export function PageHeader({ title, desc, action }) {
@@ -89,7 +103,7 @@ export function PageHeader({ title, desc, action }) {
 export function Stat({ label, value, sub, tone = "navy", icon, onClick }) {
   const Tag = onClick ? "button" : "div";
   return (
-    <Tag onClick={onClick} className={`group w-full rounded-2xl border-l-4 bg-white p-4 text-left shadow-card sm:p-5 ${BAR[tone]} ${onClick ? "transition hover:-translate-y-0.5 hover:shadow-lg" : ""}`}>
+    <Tag onClick={onClick} className={`group w-full rounded-3xl border-l-4 bg-white p-4 text-left shadow-card sm:p-5 ${BAR[tone]} ${onClick ? "transition hover:-translate-y-0.5 hover:shadow-lg" : ""}`}>
       <div className="flex items-start justify-between gap-2">
         <p className="text-[13px] font-medium text-slate-500">{label}</p>
         {icon && <span className="rounded-lg bg-mint-50 p-1.5 text-mint-700"><Icon n={icon} className="h-4 w-4" /></span>}

@@ -9,3 +9,6 @@ body { color: #12294A; -webkit-font-smoothing: antialiased; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 .spin { animation: spin .8s linear infinite; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.fade-up { animation: fadeUp .4s ease both; }
