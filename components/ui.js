@@ -114,6 +114,71 @@ export function Stat({ label, value, sub, tone = "navy", icon, onClick }) {
   );
 }
 
+const ICONBG = { green: "bg-emerald-50 text-emerald-600", yellow: "bg-amber-50 text-amber-600", red: "bg-rose-50 text-rose-600", navy: "bg-navy-50 text-navy", gray: "bg-slate-100 text-slate-500" };
+
+export function KPI({ label, value, sub, tone = "navy", icon = "home", progress, onClick }) {
+  const Tag = onClick ? "button" : "div";
+  return (
+    <Tag onClick={onClick} className={`group w-full rounded-3xl bg-white p-5 text-left shadow-card ${onClick ? "transition hover:-translate-y-0.5 hover:shadow-lg" : ""}`}>
+      <div className="flex items-center justify-between">
+        <span className={`grid h-10 w-10 place-items-center rounded-2xl ${ICONBG[tone]}`}><Icon n={icon} className="h-5 w-5" /></span>
+        {onClick && <Icon n="chevron" className="h-4 w-4 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-mint-600" />}
+      </div>
+      <p className="mt-4 text-[13px] font-medium text-slate-500">{label}</p>
+      <p className={`mt-1 text-[26px] font-extrabold leading-tight tracking-tight ${tone === "navy" ? "text-navy" : TEXT[tone]}`}>{value}</p>
+      {progress !== undefined && <div className="mt-3"><ProgressBar value={progress} tone={tone === "navy" ? "green" : tone} /></div>}
+      {sub && <p className="mt-2 text-xs text-slate-500">{sub}</p>}
+    </Tag>
+  );
+}
+
+export function ListCard({ title, desc, rows, action, className = "" }) {
+  return (
+    <div className={`rounded-3xl bg-white shadow-card ${className}`}>
+      <div className="flex items-start justify-between gap-3 px-5 pt-5 sm:px-6">
+        <div><h3 className="text-[15px] font-bold text-navy">{title}</h3>{desc && <p className="mt-0.5 text-xs text-slate-500">{desc}</p>}</div>{action}
+      </div>
+      <ul className="mt-3 divide-y divide-slate-100 pb-2">
+        {rows.map((r) => (
+          <li key={r.label}>
+            <button onClick={r.onClick} disabled={!r.onClick} className="flex w-full items-center gap-3 px-5 py-3 text-left transition enabled:hover:bg-mint-50/70 sm:px-6">
+              <i className={`h-2.5 w-2.5 shrink-0 rounded-full ${DOT[r.tone || "gray"]}`} />
+              <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-navy">{r.label}</span>{r.sub && <span className="block text-xs text-slate-500">{r.sub}</span>}</span>
+              <span className={`text-sm font-bold ${r.tone && r.tone !== "gray" && r.tone !== "navy" ? TEXT[r.tone] : "text-navy"}`}>{r.value}</span>
+              {r.onClick && <Icon n="chevron" className="h-4 w-4 shrink-0 text-slate-300" />}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function Attention({ list, go }) {
+  if (!list.length) return (
+    <div className="mb-6 flex items-center gap-4 rounded-3xl bg-white p-5 shadow-card">
+      <span className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-50 text-emerald-600"><Icon n="check" className="h-6 w-6" /></span>
+      <div><p className="text-sm font-bold text-navy">Semua terpantau aman</p><p className="text-xs text-slate-500">Tidak ada hal mendesak yang perlu ditangani saat ini.</p></div>
+    </div>
+  );
+  return (
+    <div className="mb-6 rounded-3xl bg-white p-2 shadow-card">
+      <p className="px-4 pb-1 pt-3 text-sm font-bold text-navy">Perlu perhatian ({list.length})</p>
+      <ul>
+        {list.map((x, i) => (
+          <li key={i}>
+            <button onClick={() => go(x.v, x.p || {})} className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition hover:bg-mint-50/70">
+              <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${ICONBG[x.t]}`}><Icon n="alert" className="h-[18px] w-[18px]" /></span>
+              <span className="min-w-0 flex-1 text-sm text-navy">{x.m}</span>
+              <span className="text-xs font-semibold text-mint-700">Lihat</span><Icon n="chevron" className="h-4 w-4 text-slate-300" />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function Button({ variant = "primary", className = "", icon, children, ...p }) {
   const v = {
     primary: "bg-navy text-white hover:bg-navy-700 disabled:bg-slate-300",

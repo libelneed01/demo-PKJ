@@ -32,12 +32,12 @@ export default function Warga({ params }) {
   const canEdit = role === "rw";
   const [tab, setTab] = useState(params.tab || "all");
   const [rw, setRw] = useState("");
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(params.q || "");
   const [page, setPage] = useState(1);
   const [form, setForm] = useState(null);
   const [editing, setEditing] = useState(null);
   const [errs, setErrs] = useState({});
-  const [detail, setDetail] = useState(null);
+  const [detail, setDetail] = useState(params.detail || null);
   const [del, setDel] = useState(null);
 
   const R = data.rumah;
