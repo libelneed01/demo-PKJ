@@ -200,7 +200,7 @@ function Shell() {
       <div className="flex">
         <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-72 shrink-0 overflow-y-auto py-2 pl-6 lg:block"><div className="rounded-3xl bg-white p-2 shadow-card"><Nav list={items} /></div></aside>
         <div className="flex min-h-[calc(100vh-4rem)] min-w-0 flex-1 flex-col pb-16 lg:pb-0">
-          <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-6 pt-2 sm:px-6 lg:px-8"><div className="fade-up">{view !== "dashboard" && <Crumb label={(items.find((m) => m.id === view) || {}).label || "Detail"} params={nav.params} />}<View key={view + JSON.stringify(nav.params)} params={nav.params} /></div></main>
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-6 pt-2 sm:px-6 lg:px-8"><div className="fade-in">{view !== "dashboard" && <Crumb label={(items.find((m) => m.id === view) || {}).label || "Detail"} params={nav.params} />}<View key={view + JSON.stringify(nav.params)} params={nav.params} /></div></main>
           <Footer />
         </div>
       </div>
