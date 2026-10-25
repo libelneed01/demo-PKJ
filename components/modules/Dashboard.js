@@ -4,6 +4,7 @@ import { ROLES, MIN_KAS, IPL_NOMINAL, rtKeyOf, groupName, RT_LIST, rtLabel } fro
 import { stats, tamuPerHari, kasChart } from "@/lib/stats";
 import { rp, fmtDate, fmtTime } from "@/lib/format";
 import { rtStats, waLink } from "@/lib/wa";
+import { ringkasKinerja } from "@/lib/kpi";
 import { Card, KPI, ListCard, Attention, BarChart, DonutChart, Badge, Icon, Button, ProgressBar, Select, tones } from "../ui";
 
 const lvl = (n, hi = 3) => (n === 0 ? "green" : n >= hi ? "red" : "yellow");
@@ -69,6 +70,8 @@ function RWDash({ s, go, data }) {
   if (s.approvalPending) al.push({ t: "yellow", m: `${s.approvalPending} serah terima shift belum di-approve group berikutnya.`, v: s.sh.security.menunggu ? "assetSecurity" : "assetKebersihan", p: { tab: "approval" } });
   if (s.kerusakanBerat) al.push({ t: "red", m: `${s.kerusakanBerat} kerusakan tingkat berat belum selesai.`, v: "kerusakan", p: { status: "Belum selesai" } });
   if (s.pengaduanBelum > 5) al.push({ t: "yellow", m: `${s.pengaduanBelum} pengaduan warga belum selesai.`, v: "pengaduan", p: { status: "Belum selesai" } });
+  const kj = ringkasKinerja(data, null);
+  if (kj.danruJatuhTempo) al.push({ t: "yellow", m: `${kj.danruJatuhTempo} Danru sudah melewati masa jabatan 6 bulan dan perlu dirotasi.`, v: "kinerja", p: { tab: "rotasi" } });
   const comp = [{ name: "Tinggal", value: s.tinggal, color: "#3DBE8F" }, { name: "Ngontrak", value: s.ngontrak, color: "#12294A" }, { name: "Ditinggal", value: s.ditinggal, color: "#F5B83D" }];
   return (
     <>
@@ -99,6 +102,15 @@ function RWDash({ s, go, data }) {
           Row("Izin menunggu", s.izinMenunggu, s.izinMenunggu ? "yellow" : "green", () => go("izin", { status: "Menunggu persetujuan" }), "Belum disetujui penuh"),
         ]} />
         <Card><h3 className="mb-1 text-[15px] font-bold text-navy">Komposisi warga</h3><p className="mb-3 text-xs text-slate-500">Dari {s.totalRumah} rumah. Klik di tabel warga untuk detail.</p><DonutChart data={comp} center={s.totalRumah} height={200} /></Card>
+      </Two>
+      <Two>
+        <ListCard title="Kinerja petugas" desc="Bulan ini, klik untuk rincian KPI" rows={[
+          Row("Sering terlambat (3x atau lebih)", kj.seringTelat, lvl(kj.seringTelat, 3), () => go("kinerja", { tab: "telat" }), `${kj.orangTelat} orang terlambat, ${kj.totalTelat} kejadian`),
+          Row("Sakit tanpa surat", kj.tanpaSurat, lvl(kj.tanpaSurat, 3), () => go("kinerja", { tab: "absen" })),
+          Row("Alpa tanpa keterangan", kj.alpa, lvl(kj.alpa, 2), () => go("kinerja", { tab: "absen" })),
+          Row("Layak bonus", kj.layakBonus, "green", () => go("kinerja", { tab: "kpi" })),
+          Row("Danru jatuh tempo rotasi", kj.danruJatuhTempo, lvl(kj.danruJatuhTempo, 2), () => go("kinerja", { tab: "rotasi" }), "Menjabat 6 bulan atau lebih"),
+        ]} />
       </Two>
       <RTRekap data={data} go={go} />
       <Two>
@@ -134,7 +146,9 @@ function RTDash({ data, go, session, setSession }) {
 }
 
 function KeamananDash({ s, go, data }) {
+  const kj = ringkasKinerja(data, "security");
   const al = [];
+  if (kj.danruJatuhTempo) al.push({ t: "yellow", m: `${kj.danruJatuhTempo} Danru security sudah 6 bulan menjabat dan perlu dirotasi.`, v: "kinerja", p: { tab: "rotasi" } });
   if (s.sh.security.bermasalah) al.push({ t: "red", m: "Ada serah terima shift dengan asset kurang atau rusak.", v: "assetSecurity", p: { tab: "approval" } });
   if (s.sh.security.menunggu) al.push({ t: "yellow", m: `${s.sh.security.menunggu} serah terima shift menunggu approval.`, v: "assetSecurity", p: { tab: "approval" } });
   if (s.sh.security.bertugas) al.push({ t: "yellow", m: `${s.sh.security.bertugas} group masih membawa asset (belum dikembalikan).`, v: "assetSecurity", p: { tab: "bertugas" } });
@@ -155,6 +169,13 @@ function KeamananDash({ s, go, data }) {
           Row("Asset belum lengkap", s.sh.security.bermasalah, s.sh.security.bermasalah ? "red" : "green", () => go("assetSecurity", { tab: "approval" }), "Kurang atau rusak"),
           Row("Shift selesai bersih", s.sh.security.bersih7, "green", () => go("assetSecurity", { tab: "riwayat" }), "7 hari terakhir"),
         ]} />
+        <ListCard title="Kinerja petugas" desc="Bulan ini, klik untuk rincian KPI" rows={[
+          Row("Sering terlambat (3x atau lebih)", kj.seringTelat, lvl(kj.seringTelat, 3), () => go("kinerja", { tab: "telat" }), `${kj.orangTelat} orang terlambat, ${kj.totalTelat} kejadian`),
+          Row("Sakit tanpa surat", kj.tanpaSurat, lvl(kj.tanpaSurat, 3), () => go("kinerja", { tab: "absen" })),
+          Row("Alpa tanpa keterangan", kj.alpa, lvl(kj.alpa, 2), () => go("kinerja", { tab: "absen" })),
+          Row("Layak bonus", kj.layakBonus, "green", () => go("kinerja", { tab: "kpi" })),
+          Row("Danru jatuh tempo rotasi", kj.danruJatuhTempo, lvl(kj.danruJatuhTempo, 2), () => go("kinerja", { tab: "rotasi" }), "Menjabat 6 bulan atau lebih"),
+        ]} />
         <ListCard title="Pantauan lainnya" rows={[
           Row("Security terlambat", s.telatMinggu, lvl(s.telatMinggu, 4), () => go("absenSecurity", {}), "7 hari terakhir"),
           Row("Pelanggaran parkir aktif", s.pelanggaranAktif, lvl(s.pelanggaranAktif, 5), () => go("parkir", { tab: "pelanggaran" })),
@@ -167,7 +188,9 @@ function KeamananDash({ s, go, data }) {
 }
 
 function KebersihanDash({ s, go, data }) {
+  const kj = ringkasKinerja(data, "kebersihan");
   const al = [];
+  if (kj.danruJatuhTempo) al.push({ t: "yellow", m: `${kj.danruJatuhTempo} Danru kebersihan sudah 6 bulan menjabat dan perlu dirotasi.`, v: "kinerja", p: { tab: "rotasi" } });
   if (s.sh.kebersihan.bermasalah) al.push({ t: "red", m: "Ada serah terima shift kebersihan dengan asset kurang atau rusak.", v: "assetKebersihan", p: { tab: "approval" } });
   if (s.sh.kebersihan.menunggu) al.push({ t: "yellow", m: `${s.sh.kebersihan.menunggu} serah terima shift kebersihan menunggu approval.`, v: "assetKebersihan", p: { tab: "approval" } });
   if (s.sampahAktif > 3) al.push({ t: "yellow", m: `${s.sampahAktif} tumpukan sampah belum selesai.`, v: "sampah", p: { tab: "laporan", status: "Belum selesai" } });
@@ -188,6 +211,13 @@ function KebersihanDash({ s, go, data }) {
           Row("Asset bermasalah", s.sh.kebersihan.bermasalah, s.sh.kebersihan.bermasalah ? "red" : "green", () => go("assetKebersihan", { tab: "approval" }), "Kurang atau rusak"),
           Row("Serah terima menunggu approval", s.sh.kebersihan.menunggu, s.sh.kebersihan.menunggu ? "yellow" : "green", () => go("assetKebersihan", { tab: "approval" })),
           Row("Shift selesai bersih", s.sh.kebersihan.bersih7, "green", () => go("assetKebersihan", { tab: "riwayat" }), "7 hari terakhir"),
+        ]} />
+        <ListCard title="Kinerja petugas" desc="Bulan ini, klik untuk rincian KPI" rows={[
+          Row("Sering terlambat (3x atau lebih)", kj.seringTelat, lvl(kj.seringTelat, 3), () => go("kinerja", { tab: "telat" }), `${kj.orangTelat} orang terlambat, ${kj.totalTelat} kejadian`),
+          Row("Sakit tanpa surat", kj.tanpaSurat, lvl(kj.tanpaSurat, 3), () => go("kinerja", { tab: "absen" })),
+          Row("Alpa tanpa keterangan", kj.alpa, lvl(kj.alpa, 2), () => go("kinerja", { tab: "absen" })),
+          Row("Layak bonus", kj.layakBonus, "green", () => go("kinerja", { tab: "kpi" })),
+          Row("Danru jatuh tempo rotasi", kj.danruJatuhTempo, lvl(kj.danruJatuhTempo, 2), () => go("kinerja", { tab: "rotasi" }), "Menjabat 6 bulan atau lebih"),
         ]} />
         <Card><h3 className="mb-1 text-[15px] font-bold text-navy">Laporan sampah menurut status</h3><p className="mb-3 text-xs text-slate-500">Dari laporan warga</p><BarChart data={st} height={210} /></Card>
       </Two>

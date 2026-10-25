@@ -18,8 +18,9 @@ import AI from "./modules/AI";
 import Export from "./modules/Export";
 import Panel from "./modules/Panel";
 import WaIpl from "./modules/WaIpl";
+import Kinerja from "./modules/Kinerja";
 
-const VIEWS = { dashboard: Dashboard, warga: Warga, tamu: Tamu, keuangan: Keuangan, iplSaya: IPLSaya, waIpl: WaIpl, pengumuman: Pengumuman, absenSecurity: AbsenSecurity, absenKebersihan: AbsenKebersihan, pengaduan: Pengaduan, assetSecurity: AssetSecurity, assetKebersihan: AssetKebersihan, parkir: Parkir, sampah: Sampah, kerusakan: Kerusakan, izin: Izin, kontak: Kontak, ai: AI, export: Export, panel: Panel };
+const VIEWS = { dashboard: Dashboard, warga: Warga, tamu: Tamu, keuangan: Keuangan, iplSaya: IPLSaya, waIpl: WaIpl, kinerja: Kinerja, pengumuman: Pengumuman, absenSecurity: AbsenSecurity, absenKebersihan: AbsenKebersihan, pengaduan: Pengaduan, assetSecurity: AssetSecurity, assetKebersihan: AssetKebersihan, parkir: Parkir, sampah: Sampah, kerusakan: Kerusakan, izin: Izin, kontak: Kontak, ai: AI, export: Export, panel: Panel };
 const DESC = { rw: "Ringkasan seluruh komplek", rt: "IPL dan warga per RT", keamanan: "Pos jaga dan keamanan", kebersihan: "Petugas dan lingkungan", bendahara: "IPL dan kas", warga: "Layanan untuk penghuni" };
 
 export default function App() {

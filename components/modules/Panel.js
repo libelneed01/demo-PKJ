@@ -10,7 +10,7 @@ const MODULES = [
   { label: "Serah Terima Security", cols: ["shiftSecurity"] }, { label: "Serah Terima Kebersihan", cols: ["shiftKebersihan"] },
   { label: "Pengaduan", cols: ["pengaduan"] }, { label: "Parkir (pelanggaran)", cols: ["pelanggaran"] },
   { label: "Laporan Sampah", cols: ["sampahLaporan"] }, { label: "Kerusakan Fasilitas", cols: ["kerusakan"] },
-  { label: "Izin Renovasi & Keramaian", cols: ["izin"] }, { label: "Pesan WhatsApp (simulasi)", cols: ["waPesan"] }, { label: "Dokumen & upload", cols: ["uploads"] },
+  { label: "Izin Renovasi & Keramaian", cols: ["izin"] }, { label: "Ketidakhadiran petugas", cols: ["ketidakhadiran"] }, { label: "Pesan WhatsApp (simulasi)", cols: ["waPesan"] }, { label: "Dokumen & upload", cols: ["uploads"] },
 ];
 
 export default function Panel() {
