@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useApp } from "@/lib/store";
 import { NAV, EXTRA, ROLES, PICK_ROLES } from "@/lib/config";
 import { Icon, Brand, Badge, Footer, Toasts, Modal } from "./ui";
@@ -23,10 +23,30 @@ import Kinerja from "./modules/Kinerja";
 const VIEWS = { dashboard: Dashboard, warga: Warga, tamu: Tamu, keuangan: Keuangan, iplSaya: IPLSaya, waIpl: WaIpl, kinerja: Kinerja, pengumuman: Pengumuman, absenSecurity: AbsenSecurity, absenKebersihan: AbsenKebersihan, pengaduan: Pengaduan, assetSecurity: AssetSecurity, assetKebersihan: AssetKebersihan, parkir: Parkir, sampah: Sampah, kerusakan: Kerusakan, izin: Izin, kontak: Kontak, ai: AI, export: Export, panel: Panel };
 const DESC = { rw: "Ringkasan seluruh komplek", rt: "IPL dan warga per RT", keamanan: "Pos jaga dan keamanan", kebersihan: "Petugas dan lingkungan", bendahara: "IPL dan kas", warga: "Layanan untuk penghuni" };
 
+class Boundary extends React.Component {
+  constructor(p) { super(p); this.state = { err: null }; }
+  static getDerivedStateFromError(err) { return { err }; }
+  componentDidCatch(err) { console.error(err); }
+  render() {
+    if (!this.state.err) return this.props.children;
+    const reset = () => { try { Object.keys(localStorage).filter((k) => k.startsWith("pkj-")).forEach((k) => localStorage.removeItem(k)); sessionStorage.clear(); } catch (e) {} location.reload(); };
+    return (
+      <div className="grid min-h-screen place-items-center p-6">
+        <div className="max-w-md rounded-3xl bg-white p-8 text-center shadow-card">
+          <h1 className="text-xl font-bold text-navy">Ups, ada yang tidak beres</h1>
+          <p className="mt-2 text-sm text-slate-500">Biasanya karena data demo lama tersimpan di browser. Muat ulang dengan data awal akan memperbaikinya.</p>
+          <button onClick={reset} className="mt-5 rounded-xl bg-navy px-5 py-2.5 text-sm font-semibold text-white hover:bg-navy-700">Muat ulang dengan data awal</button>
+          <p className="mt-4 break-words text-xs text-slate-400">{String(this.state.err && this.state.err.message)}</p>
+        </div>
+      </div>
+    );
+  }
+}
+
 export default function App() {
   const { ready, session } = useApp();
   if (!ready) return <div className="grid min-h-screen place-items-center text-sm text-slate-500">Memuat data demo…</div>;
-  return (<>{session ? (session.role === "pengelola" ? <PanelShell /> : <Shell />) : <Login />}<Toasts /></>);
+  return (<Boundary>{session ? (session.role === "pengelola" ? <PanelShell /> : <Shell />) : <Login />}<Toasts /></Boundary>);
 }
 
 const ROLE_UI = {
