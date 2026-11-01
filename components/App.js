@@ -23,6 +23,13 @@ import Kinerja from "./modules/Kinerja";
 const VIEWS = { dashboard: Dashboard, warga: Warga, tamu: Tamu, keuangan: Keuangan, iplSaya: IPLSaya, waIpl: WaIpl, kinerja: Kinerja, pengumuman: Pengumuman, absenSecurity: AbsenSecurity, absenKebersihan: AbsenKebersihan, pengaduan: Pengaduan, assetSecurity: AssetSecurity, assetKebersihan: AssetKebersihan, parkir: Parkir, sampah: Sampah, kerusakan: Kerusakan, izin: Izin, kontak: Kontak, ai: AI, export: Export, panel: Panel };
 const DESC = { rw: "Ringkasan seluruh komplek", rt: "IPL dan warga per RT", keamanan: "Pos jaga dan keamanan", kebersihan: "Petugas dan lingkungan", bendahara: "IPL dan kas", warga: "Layanan untuk penghuni" };
 
+const DB_UI = { lokal: ["gray", "Mode lokal"], menghubungkan: ["yellow", "Menghubungkan…"], online: ["green", "Database bersama"], error: ["red", "Database terputus"] };
+function DbChip() {
+  const { dbStatus } = useApp();
+  const [t, l] = DB_UI[dbStatus] || DB_UI.lokal;
+  return <span className="hidden md:inline-flex"><Badge tone={t}>{l}</Badge></span>;
+}
+
 class Boundary extends React.Component {
   constructor(p) { super(p); this.state = { err: null }; }
   static getDerivedStateFromError(err) { return { err }; }
@@ -113,7 +120,7 @@ function PanelShell() {
     <div className="flex min-h-screen flex-col">
       <header className="flex h-16 items-center justify-between px-4 sm:px-6">
         <Brand size={40} />
-        <button onClick={logout} className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-navy shadow-card hover:bg-slate-50"><Icon n="logout" className="h-4 w-4" />Keluar</button>
+        <div className="flex items-center gap-3"><DbChip /><button onClick={logout} className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-navy shadow-card hover:bg-slate-50"><Icon n="logout" className="h-4 w-4" />Keluar</button></div>
       </header>
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 pb-6 pt-2 sm:px-6"><Panel /></main>
       <Footer />
@@ -203,7 +210,7 @@ function Shell() {
         <button onClick={() => go("dashboard", {})} aria-label="Ke dashboard"><Brand size={40} /></button>
         <div className="flex items-center gap-2 sm:gap-3">
           <button onClick={() => setFind(true)} className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-500 shadow-card hover:bg-mint-50" aria-label="Cari cepat"><Icon n="search" className="h-4 w-4" /><span className="hidden sm:inline">Cari…</span><kbd className="hidden rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-400 md:inline">Ctrl K</kbd></button>
-          <span className="hidden sm:inline-flex"><Badge tone="green">{ROLES[role]}</Badge></span>
+          <DbChip /><span className="hidden sm:inline-flex"><Badge tone="green">{ROLES[role]}</Badge></span>
           <button onClick={logout} className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-navy shadow-card hover:bg-slate-50"><Icon n="logout" className="h-4 w-4" />Keluar</button>
         </div>
       </header>

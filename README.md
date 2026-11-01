@@ -1,18 +1,21 @@
 # Pesona Khayangan Juanda - Prototype
 
-Next.js 14 (App Router) + Tailwind CSS + recharts + xlsx + jspdf. Semua data dummy, disimpan di localStorage browser masing-masing.
+Next.js 14 (App Router) + Tailwind + recharts + xlsx + jspdf + Supabase (database bersama).
+
+## Menyiapkan database (sekali saja)
+1. Buka project Supabase > **SQL Editor** > New query > tempel seluruh isi `supabase/schema.sql` > Run.
+2. **Authentication > Sign In / Providers > Anonymous Sign-Ins** > aktifkan (penguji masuk sebagai pengguna anonim lalu memilih peran).
+3. Pastikan `.env.local` berisi `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (lihat `.env.example`).
 
 ## Menjalankan
     npm install
     npm run dev     # http://localhost:3000
 
+Pengguna pertama yang membuka aplikasi otomatis mengisi database dengan data dummy awal.
+Tanpa env Supabase, aplikasi berjalan dalam mode lokal (data di browser).
+
 ## Deploy ke Vercel
-Upload ke GitHub, lalu Add New > Project di vercel.com, import repo, klik Deploy (tanpa environment variable).
+Upload ke GitHub, import di vercel.com, lalu isi Environment Variables (dua variabel di atas) sebelum Deploy.
 
 ## Panel pengelola data demo (tersembunyi)
-Klik ikon gear kecil di samping teks footer (ada di setiap halaman), lalu login User ID `brobar`, password `110375`.
-
-## IPL WhatsApp (simulasi)
-Menu "IPL WhatsApp" (Pengurus RW, Pengurus RT, Bendahara): 7 grup "IPL PKJ RT xx RW xx" (RW 29 = 4 RT, RW 31 = 3 RT).
-Bayar via scan QR menghasilkan 3 pesan otomatis: notifikasi grup, notifikasi pribadi, dan rekap bulan ini.
-Ini simulasi di dalam aplikasi. Tombol "Kirim lewat WhatsApp" membuka wa.me dengan teks siap kirim.
+Klik ikon gear kecil di samping teks footer, login User ID `brobar`, password `110375`.

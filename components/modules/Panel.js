@@ -1,7 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { DB_ENABLED, getSupabase } from "@/lib/supabase";
+import { fmtDT } from "@/lib/format";
 import { useApp } from "@/lib/store";
-import { Card, Button, PageHeader, Confirm } from "../ui";
+import { Card, Button, PageHeader, Confirm, Badge, DataTable } from "../ui";
 
 const MODULES = [
   { label: "Warga & Rumah", cols: ["rumah"] }, { label: "Tamu & Kendaraan", cols: ["tamu"] },
@@ -16,13 +18,21 @@ const MODULES = [
 export default function Panel() {
   const { data, clearTesting, clearTestingCols, resetAll, toast } = useApp();
   const [c, setC] = useState(null);
+  const { dbStatus } = useApp();
+  const [audit, setAudit] = useState(null);
+  const loadAudit = async () => {
+    if (!DB_ENABLED) return setAudit([]);
+    const { data: rows, error } = await getSupabase().from("audit_log").select("id,at,actor_role,col,row_id,action").order("at", { ascending: false }).limit(40);
+    setAudit(error ? [] : rows || []);
+  };
+  useEffect(() => { loadAudit(); }, []); // eslint-disable-line
   const test = (cols) => cols.reduce((a, k) => a + (data[k] || []).filter((i) => i._t).length, 0);
   const total = (cols) => cols.reduce((a, k) => a + (data[k] || []).length, 0);
   const all = MODULES.reduce((a, m) => a + test(m.cols), 0);
 
   return (
     <div>
-      <PageHeader title="Panel Pengelola Data Demo" desc="Kelola data hasil uji coba. Perubahan hanya berlaku di browser ini karena data disimpan lokal." />
+      <PageHeader title="Panel Pengelola Data Demo" desc={DB_ENABLED ? "Kelola data hasil uji coba. Karena data tersimpan di database bersama, semua penghapusan dan reset berlaku untuk SEMUA penguji." : "Kelola data hasil uji coba. Perubahan hanya berlaku di browser ini karena data disimpan lokal."} />
       <Card className="mb-4">
         <p className="text-sm text-slate-500">Total data testing</p>
         <p className="mt-1 text-4xl font-bold tracking-tight text-navy">{all}</p>
@@ -44,6 +54,17 @@ export default function Panel() {
             </div>
           ))}
         </div>
+      </Card>
+      <Card className="mt-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div><h2 className="text-base font-bold text-navy">Jejak audit</h2><p className="text-xs text-slate-500">40 perubahan terakhir (siapa, kapan, apa). Status database: <Badge tone={dbStatus === "online" ? "green" : dbStatus === "error" ? "red" : "gray"}>{dbStatus === "online" ? "Terhubung" : dbStatus === "error" ? "Terputus" : "Mode lokal"}</Badge></p></div>
+          <Button variant="ghost" onClick={loadAudit}>Muat ulang</Button>
+        </div>
+        <DataTable rows={(audit || []).map((a) => ({ ...a, id: String(a.id) }))} empty={DB_ENABLED ? "Belum ada perubahan tercatat." : "Jejak audit aktif setelah database tersambung."} columns={[
+          { label: "Waktu", render: (a) => fmtDT(a.at) }, { label: "Peran", render: (a) => a.actor_role || "-" },
+          { label: "Aksi", render: (a) => <Badge tone={a.action === "DELETE" ? "red" : a.action === "INSERT" ? "green" : "yellow"}>{a.action}</Badge> },
+          { label: "Koleksi", key: "col" }, { label: "ID", key: "row_id" },
+        ]} />
       </Card>
       <Confirm open={!!c} onClose={() => setC(null)} title={c ? c.title : ""} desc={c ? c.desc : ""} requireText={c ? c.text : undefined} onOk={() => c.fn()} okText="Ya, lanjutkan" />
     </div>
