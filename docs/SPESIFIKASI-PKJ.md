@@ -62,7 +62,7 @@ Pengelola Cluster (akses tersembunyi di demo)
 |---|---|---|---|---|---|---|---|
 | Data warga dan aset | Lihat, edit | Lihat | Lihat dan edit (RT sendiri) | Lihat | Kendaraan dan tamu saja | - | Edit data sendiri |
 | IPL dan keuangan | Lihat | Lihat | Lihat (RT sendiri) | Lihat, edit | - | - | Lihat sendiri dan transparansi |
-| Pengaduan | Lihat | Approve | Tindak lanjut | - | Lihat | Lihat | Buat dan lacak |
+| Pengaduan | Semua | Semua, approve | Tindak lanjut (RT sendiri) | Hanya yang Umum | Menurut tingkat kerahasiaan dan kategori | Menurut tingkat kerahasiaan dan kategori | Buat, lacak milik sendiri, lihat yang Umum |
 | Izin kegiatan | Lihat | Approve | Approve | - | Approve (tahap Keamanan) | - | Ajukan dan setujui sebagai tetangga |
 | Absensi, KPI, serah terima | Lihat | Lihat | - | Lihat (KPI untuk gaji dan bonus) | Edit (security) | Edit (kebersihan) | - |
 | Audit trail | Lihat | Lihat | Lihat | Lihat | - | - | - |
@@ -175,8 +175,25 @@ Field wajib: judul, kategori, tanggal, jam mulai dan selesai, tempat, deskripsi,
 - **Approval group baru** hanya bisa bila catatan terisi dan asset lengkap atau ada keterangan kekurangan yang jelas. Penerima harus dari group yang berbeda. Group baru bisa menolak dengan alasan.
 - Setelah approve, shift selesai bersih (atau "dengan catatan" bila ada masalah asset). Riwayat lengkap tersimpan.
 
-### I. Pengaduan
-Field: judul, kategori, lokasi, deskripsi, foto (placeholder), nama pelapor. Status: Belum Ditangani, Sedang Dikerjakan, Selesai. Pengurus bisa mengubah status dan menambah catatan. Alur SLA dan eskalasi di bagian 9.
+### I. Pengaduan dan kerahasiaannya
+Field: judul, kategori, lokasi, deskripsi, foto (placeholder), nama pelapor, pihak yang dilaporkan (opsional), dan **tingkat kerahasiaan**. Status: Baru, Diproses, Selesai (narasi awal menulis Belum Ditangani, Sedang Dikerjakan, Selesai). Pengurus bisa mengubah status dan menambah catatan.
+
+**Tiga tingkat kerahasiaan** (dipilih pelapor; RT dan RW bisa mengubahnya):
+
+| Tingkat | Siapa yang bisa melihat | Contoh |
+|---|---|---|
+| Umum | Semua warga; nama pelapor dan rumah disamarkan | Lampu jalan mati, selokan tersumbat, jalan berlubang |
+| Pribadi | Pelapor, Pengurus RW, Pengurus RT, dan seksi terkait (Keamanan untuk kategori Keamanan dan Kebisingan; Kebersihan untuk kategori Kebersihan dan Fasilitas) | Orang asing berkeliaran, CCTV mati |
+| Rahasia | Pelapor, Pengurus RT, dan Pengurus RW saja | Keluhan yang menyangkut tetangga tertentu, kebisingan, masalah sosial |
+
+Aturan tambahan:
+- Seksi (Keamanan, Kebersihan) hanya melihat blok pelapor, bukan nama dan nomor rumah.
+- "Pihak yang dilaporkan" hanya terlihat oleh RT dan RW, tidak pernah oleh warga lain atau pihak yang dilaporkan.
+- Data lama tanpa tingkat kerahasiaan dianggap Pribadi.
+- Bendahara tidak melihat pengaduan selain yang Umum; Export hanya memuat pengaduan yang boleh dilihat role pengunduh.
+- Di database, aturan ini dijaga lewat aturan akses baris (`can_read_record` di `supabase/schema.sql`), sehingga pengaduan yang tidak berhak dilihat tidak ikut terkirim ke perangkat warga. Pembatasan per RT masih di tingkat tampilan; di database baru berlaku setelah login per akun.
+
+Alur SLA dan eskalasi di bagian 9.
 
 ### J. Parkir
 Daftar kendaraan warga (dari data rumah), input pelanggaran, riwayat, dan tindak lanjut bertingkat (peringatan, ditindak, selesai) yang terhubung ke sanksi bertingkat.
@@ -294,6 +311,7 @@ Prototype saat ini memakai rumus sementara (35 ketepatan, 35 kehadiran, 30 nilai
 - Audit trail wajib untuk: data warga dan aset, keuangan, pengaduan, izin, surat, absensi manual, promosi dan mutasi, perubahan role. Isinya siapa, peran, waktu server, nilai sebelum dan sesudah.
 - Data pribadi (KK, KTP, nomor HP) disamarkan secara default, dan hanya dibuka bila role berhak serta ada alasan. Warga memberi persetujuan penggunaan data; rujukan hukum: UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi.
 - Tidak ada penghapusan permanen untuk data operasional di produksi (hapus lunak).
+- Pengaduan dilindungi tiga tingkat kerahasiaan (bagian 8.I). Koleksi data lain di prototype masih terbuka untuk semua pengguna yang punya profil; pembatasan per role dan RT menyusul bersama login per akun.
 - Prototype: aturan akses database masih longgar dan kata sandi panel pengelola dicek di sisi aplikasi; hanya untuk demo, bukan data warga sungguhan.
 
 ---
@@ -349,7 +367,7 @@ Setiap halaman punya tombol **Beri masukan** yang menyimpan masukan penguji ke d
 | Bagian | Narasi | Aplikasi sekarang |
 |---|---|---|
 | Menu RW | Memuat Keamanan, Kebersihan, Parkir | Memuat Tamu, Kerusakan, Sampah; Parkir belum ada |
-| Pengaduan | Status Belum Ditangani, Sedang Dikerjakan, Selesai; ada kolom lokasi | Status Baru, Diproses, Selesai; belum ada kolom lokasi |
+| Pengaduan | Status Belum Ditangani, Sedang Dikerjakan, Selesai | Status Baru, Diproses, Selesai (kolom lokasi dan tingkat kerahasiaan sudah ada) |
 | Pengumuman | Tanggal, jam mulai dan selesai, tempat, penanggung jawab | Hanya judul, kategori, isi, berlaku sampai, koordinator |
 | Kerusakan | Jenis dari daftar tetap | Nama fasilitas teks bebas |
 | Izin | Jenis termasuk Pembangunan | Tidak ada jenis Pembangunan |

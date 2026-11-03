@@ -3,34 +3,58 @@ import { useState } from "react";
 import { useApp } from "@/lib/store";
 import { fmtDate } from "@/lib/format";
 import Crud, { StatusEditor } from "../Crud";
-import { Badge, Card, Tabs, DataTable } from "../ui";
+import { Badge, Card, Tabs, DataTable, Button, Field, Select } from "../ui";
+import { SIFAT_OPTS, SIFAT_TONE, SIFAT_LABEL, canSeePengaduan, maskPengaduan } from "@/lib/privacy";
 
 const RW = ["RW 29", "RW 31"];
 
+function SifatEditor({ row }) {
+  const { update, toast } = useApp();
+  const [v, setV] = useState(row.sifat || "Pengurus");
+  return (
+    <div className="rounded-2xl bg-slate-50 p-4">
+      <p className="mb-3 text-sm font-bold text-navy">Tingkat kerahasiaan</p>
+      <div className="flex flex-wrap items-end gap-3"><div className="min-w-[260px] flex-1"><Select value={v} onChange={(e) => setV(e.target.value)} options={SIFAT_OPTS} /></div><Button variant="ghost" onClick={() => { update("pengaduan", row.id, { sifat: v }); toast("Tingkat kerahasiaan diubah"); }}>Simpan</Button></div>
+    </div>
+  );
+}
+
 export function Pengaduan({ params }) {
   const { role, session, data } = useApp();
-  const mine = role === "warga";
-  const h = mine ? data.rumah.find((x) => x.id === session.houseId) : null;
   const ST = ["Baru", "Diproses", "Selesai"];
   const tones = { Baru: "red", Diproses: "yellow", Selesai: "green" };
+  const mine = role === "warga";
+  const [tab, setTab] = useState("saya");
+  const ctx = { role, session, data };
+  const h = mine ? data.rumah.find((x) => x.id === session.houseId) : null;
+  const isPublicTab = mine && tab === "umum";
+  const rowFilter = mine ? (tab === "saya" ? (r) => r.rumah === session.houseId : (r) => (r.sifat || "Pengurus") === "Umum") : (r) => canSeePengaduan(r, ctx);
+  const tabs = mine ? <Tabs value={tab} onChange={setTab} tabs={[{ id: "saya", label: "Pengaduan saya" }, { id: "umum", label: "Pengaduan umum komplek" }]} /> : null;
   return (
     <Crud
-      col="pengaduan" title={mine ? "Pengaduan Saya" : "Pengaduan Warga"} desc="Sampaikan keluhan atau masukan. Pengurus akan menindaklanjuti dan memberi catatan."
-      params={params} statusKey="status" tones={tones} statusOptions={ST} searchKeys={["judul", "pelapor", "rumah", "kategori"]} addLabel="Buat pengaduan"
-      rowFilter={mine ? (r) => r.rumah === session.houseId : undefined} defaults={mine && h ? { rumah: h.id, pelapor: h.owner } : {}}
+      col="pengaduan" title={mine ? (isPublicTab ? "Pengaduan Umum" : "Pengaduan Saya") : "Pengaduan Warga"}
+      desc={mine ? (isPublicTab ? "Pengaduan tentang fasilitas dan lingkungan yang dibuka untuk semua warga. Nama pelapor disamarkan." : "Hanya Anda dan pengurus yang berwenang yang bisa melihat pengaduan pribadi atau rahasia Anda.") : "Pengaduan dibatasi menurut tingkat kerahasiaan. Pengaduan rahasia hanya terlihat oleh Pengurus RT dan RW."}
+      params={params} statusKey="status" tones={tones} statusOptions={ST} searchKeys={["judul", "pelapor", "rumah", "kategori", "lokasi"]} addLabel="Buat pengaduan" canAdd={!isPublicTab}
+      extraTop={tabs} rowFilter={rowFilter} mapRow={(r) => maskPengaduan(r, ctx)} defaults={mine && h ? { rumah: h.id, pelapor: h.owner } : {}}
       fields={[
         { key: "pelapor", label: "Nama pelapor", required: true }, { key: "rumah", label: "Blok & nomor rumah", required: true, placeholder: "Contoh: C-12" },
         { key: "kategori", label: "Kategori", type: "select", required: true, options: ["Keamanan", "Kebersihan", "Fasilitas", "Kebisingan", "Sosial", "Lainnya"] },
-        { key: "judul", label: "Judul pengaduan", required: true },
+        { key: "judul", label: "Judul pengaduan", required: true }, { key: "lokasi", label: "Lokasi kejadian", required: true, placeholder: "Contoh: Taman RW 29" },
+        { key: "sifat", label: "Siapa yang boleh melihat? *", type: "select", required: true, default: "Pengurus", options: SIFAT_OPTS, full: true },
+        { key: "terlapor", label: "Pihak yang dilaporkan (opsional, hanya dilihat RT dan RW)", placeholder: "Blok dan nomor rumah, bila menyangkut tetangga", full: true },
         { key: "deskripsi", label: "Uraian", type: "textarea", required: true }, { key: "foto", label: "Foto pendukung (opsional)", type: "file" },
       ]}
       makeItem={(v) => ({ ...v, status: "Baru", catatan: "" })}
       columns={[
-        { label: "Pengaduan", render: (r) => <div><p className="font-semibold text-navy">{r.judul}</p><p className="text-xs text-slate-500">{r.pelapor} - {r.rumah}</p></div> },
-        { label: "Kategori", key: "kategori" }, { label: "Tanggal", render: (r) => fmtDate(r.at) },
+        { label: "Pengaduan", render: (r) => <div><p className="font-semibold text-navy">{r.judul}</p><p className="text-xs text-slate-500">{r.pelapor}{r.rumah && r.rumah !== "-" ? " - " + r.rumah : ""}</p></div> },
+        { label: "Kategori", key: "kategori" }, { label: "Sifat", render: (r) => <Badge tone={SIFAT_TONE[r.sifat || "Pengurus"]}>{SIFAT_LABEL[r.sifat || "Pengurus"]}</Badge> }, { label: "Tanggal", render: (r) => fmtDate(r.at) },
         { label: "Status", render: (r) => <Badge tone={tones[r.status]}>{r.status}</Badge> },
       ]}
-      detailActions={(r) => <StatusEditor col="pengaduan" row={r} options={ST} canEdit={role !== "warga"} />}
+      detailActions={(r) => (<>
+        {r.terlapor && <p className="rounded-2xl bg-amber-50 p-3 text-sm text-amber-800"><b>Pihak yang dilaporkan:</b> {r.terlapor} (hanya terlihat RT dan RW)</p>}
+        {(role === "rw" || role === "rt") && <SifatEditor row={r} />}
+        <StatusEditor col="pengaduan" row={r} options={ST} canEdit={role !== "warga" && role !== "bendahara"} />
+      </>)}
     />
   );
 }

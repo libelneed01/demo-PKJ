@@ -6,7 +6,7 @@ import { Card, Button, Modal, Field, Input, Select, Textarea, FileInput, SearchB
 
 const SIZE = 12;
 
-export default function Crud({ col, title, desc, fields, columns, makeItem, statusKey, tones = {}, statusOptions = [], params = {}, searchKeys = [], canAdd = true, addLabel = "Tambah laporan", detailActions, extraTop, uploadModul, defaults = {}, rowFilter, groups, doneStatus }) {
+export default function Crud({ col, title, desc, fields, columns, makeItem, statusKey, tones = {}, statusOptions = [], params = {}, searchKeys = [], canAdd = true, addLabel = "Tambah laporan", detailActions, extraTop, uploadModul, defaults = {}, rowFilter, mapRow, groups, doneStatus }) {
   const { data, role, add, remove, toast } = useApp();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState(params.status || "");
@@ -24,9 +24,11 @@ export default function Crud({ col, title, desc, fields, columns, makeItem, stat
   if (kat) rows = rows.filter((r) => r.kategori === kat);
   if (filter) { const g = grp.find((x) => x.label === filter); rows = rows.filter((r) => (g ? g.test(r) : r[statusKey] === filter)); }
   if (q) rows = rows.filter((r) => searchKeys.some((k) => String(r[k] || "").toLowerCase().includes(q.toLowerCase())));
+  if (mapRow) rows = rows.map(mapRow);
   rows = [...rows].sort((a, b) => (b.at || "").localeCompare(a.at || ""));
   const view = rows.slice((page - 1) * SIZE, page * SIZE);
-  const current = detail ? (data[col] || []).find((r) => r.id === detail) : null;
+  const found = detail ? (data[col] || []).find((r) => r.id === detail) : null;
+  const current = found && (!rowFilter || rowFilter(found)) ? (mapRow ? mapRow(found) : found) : null;
 
   const open = () => { setForm({ ...fields.reduce((o, f) => ({ ...o, [f.key]: f.default || "" }), {}), ...defaults }); setErrs({}); };
   useEffect(() => { if (params.add && canAdd) open(); }, []); // eslint-disable-line

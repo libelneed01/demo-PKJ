@@ -2,16 +2,19 @@
 import { useState } from "react";
 import { useApp } from "@/lib/store";
 import { exportExcel, exportPDF } from "@/lib/export";
+import { canSeePengaduan, maskPengaduan } from "@/lib/privacy";
 import { Card, Button, PageHeader, Icon } from "../ui";
 
 const CONTENT = ["Ringkasan seluruh modul", "Database warga & rumah (600 rumah)", "IPL menunggak dan pengeluaran", "Tamu & kendaraan", "Absensi security dan kebersihan", "Pengaduan, kerusakan, sampah, izin", "Serah terima shift security & kebersihan, pelanggaran parkir"];
 
 export default function Export() {
-  const { data, toast } = useApp();
+  const { data, toast, role, session } = useApp();
+  const ctx = { role, session, data };
+  const safe = { ...data, pengaduan: data.pengaduan.filter((r) => canSeePengaduan(r, ctx)).map((r) => maskPengaduan(r, ctx)) };
   const [busy, setBusy] = useState("");
   const run = async (kind) => {
     setBusy(kind);
-    try { kind === "xlsx" ? await exportExcel(data) : await exportPDF(data); toast("Laporan berhasil diunduh"); }
+    try { kind === "xlsx" ? await exportExcel(safe) : await exportPDF(safe); toast("Laporan berhasil diunduh"); }
     catch (e) { console.error(e); toast("Gagal membuat laporan. Coba lagi.", "red"); }
     setBusy("");
   };

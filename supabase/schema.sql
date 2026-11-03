@@ -86,12 +86,40 @@ alter table public.app_records enable row level security;
 alter table public.profiles    enable row level security;
 alter table public.audit_log   enable row level security;
 
+-- Aturan baca: pengaduan dibatasi menurut tingkat kerahasiaan (kolom data->>'sifat')
+--   Umum     : semua pengguna
+--   Pengurus : pelapor, RW, RT, dan seksi terkait (Keamanan: Keamanan/Kebisingan, Kebersihan: Kebersihan/Fasilitas)
+--   Rahasia  : pelapor, RW, RT
+-- Koleksi lain terbuka untuk semua pengguna yang sudah punya profil (tahap demo).
+create or replace function public.can_read_record(c text, d jsonb) returns boolean
+language plpgsql stable security definer set search_path = public as $$
+declare r text; s text;
+begin
+  if c <> 'pengaduan' then return true; end if;
+  s := coalesce(d->>'sifat', 'Pengurus');
+  if s = 'Umum' then return true; end if;
+  if d->>'_uid' = auth.uid()::text then return true; end if;
+  select role into r from public.profiles where id = auth.uid();
+  if r in ('rw', 'rt', 'pengelola') then return true; end if;
+  if s = 'Pengurus' and r = 'keamanan'   and d->>'kategori' in ('Keamanan', 'Kebisingan') then return true; end if;
+  if s = 'Pengurus' and r = 'kebersihan' and d->>'kategori' in ('Kebersihan', 'Fasilitas') then return true; end if;
+  return false;
+end $$;
+
 drop policy if exists app_read  on public.app_records;
 drop policy if exists app_write on public.app_records;
-create policy app_read  on public.app_records for select to authenticated using (true);
-create policy app_write on public.app_records for all to authenticated
-  using      (exists (select 1 from public.profiles p where p.id = auth.uid()))
+drop policy if exists app_ins   on public.app_records;
+drop policy if exists app_upd   on public.app_records;
+drop policy if exists app_del   on public.app_records;
+create policy app_read on public.app_records for select to authenticated
+  using (public.can_read_record(col, data));
+create policy app_ins on public.app_records for insert to authenticated
   with check (exists (select 1 from public.profiles p where p.id = auth.uid()));
+create policy app_upd on public.app_records for update to authenticated
+  using      (public.can_read_record(col, data) and exists (select 1 from public.profiles p where p.id = auth.uid()))
+  with check (exists (select 1 from public.profiles p where p.id = auth.uid()));
+create policy app_del on public.app_records for delete to authenticated
+  using (public.can_read_record(col, data) and exists (select 1 from public.profiles p where p.id = auth.uid()));
 
 drop policy if exists prof_read on public.profiles;
 drop policy if exists prof_ins  on public.profiles;
