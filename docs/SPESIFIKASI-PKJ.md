@@ -338,7 +338,7 @@ Data awal: 600 rumah (RW 29 dan RW 31, 7 RT), tamu, pembayaran, pengumuman, abse
 5. **Bendahara:** verifikasi bukti transfer, input pengeluaran sampai kas di bawah batas (indikator merah).
 6. **Pengurus RW:** lihat dashboard berubah setelah aksi di atas, jalankan AI Analisis, export Excel dan PDF.
 
-Setiap halaman punya tombol **Beri masukan** yang menyimpan masukan penguji ke database. **[BELUM DIBANGUN]**
+Setiap halaman punya tombol **Masukan** (jenis, pesan, nilai kemudahan 1 sampai 5; halaman dan peran tercatat otomatis) yang menyimpan masukan penguji ke database dan tampil di panel pengelola. Tombol **Panduan uji** menampilkan skenario per role. Warga yang masuk mendapat rumah acak (yang belum lunas) supaya penguji tidak berebut satu rumah, dan kepemilikan pengaduan dicocokkan lewat akun, bukan hanya rumah.
 
 ---
 
@@ -354,6 +354,7 @@ Setiap halaman punya tombol **Beri masukan** yang menyimpan masukan penguji ke d
 | IPL WhatsApp (simulasi, per RT) | Sebagian (aturan privasi grup belum diterapkan) |
 | AI Analisis, Export | Selesai |
 | Database bersama, sinkronisasi realtime, audit trail | Selesai (perlu diuji di Supabase) |
+| Tombol Masukan, Panduan uji, privasi pengaduan 3 tingkat | Selesai |
 | Lapor Data Kependudukan, SLA dan eskalasi, Tugas Saya dan notifikasi | Belum |
 | Login per akun, akses per role dan RT | Belum |
 | Tamu undangan QR, panic button, patroli, buku kejadian | Belum |

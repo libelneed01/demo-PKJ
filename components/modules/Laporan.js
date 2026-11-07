@@ -4,7 +4,7 @@ import { useApp } from "@/lib/store";
 import { fmtDate } from "@/lib/format";
 import Crud, { StatusEditor } from "../Crud";
 import { Badge, Card, Tabs, DataTable, Button, Field, Select } from "../ui";
-import { SIFAT_OPTS, SIFAT_TONE, SIFAT_LABEL, canSeePengaduan, maskPengaduan } from "@/lib/privacy";
+import { SIFAT_OPTS, SIFAT_TONE, SIFAT_LABEL, canSeePengaduan, maskPengaduan, isOwn } from "@/lib/privacy";
 
 const RW = ["RW 29", "RW 31"];
 
@@ -28,7 +28,7 @@ export function Pengaduan({ params }) {
   const ctx = { role, session, data };
   const h = mine ? data.rumah.find((x) => x.id === session.houseId) : null;
   const isPublicTab = mine && tab === "umum";
-  const rowFilter = mine ? (tab === "saya" ? (r) => r.rumah === session.houseId : (r) => (r.sifat || "Pengurus") === "Umum") : (r) => canSeePengaduan(r, ctx);
+  const rowFilter = mine ? (tab === "saya" ? (r) => isOwn(r, session) : (r) => (r.sifat || "Pengurus") === "Umum") : (r) => canSeePengaduan(r, ctx);
   const tabs = mine ? <Tabs value={tab} onChange={setTab} tabs={[{ id: "saya", label: "Pengaduan saya" }, { id: "umum", label: "Pengaduan umum komplek" }]} /> : null;
   return (
     <Crud

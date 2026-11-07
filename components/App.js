@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useApp } from "@/lib/store";
-import { NAV, EXTRA, ROLES, PICK_ROLES } from "@/lib/config";
-import { Icon, Brand, Badge, Footer, Toasts, Modal } from "./ui";
+import { NAV, EXTRA, ROLES, PICK_ROLES, SCENARIOS } from "@/lib/config";
+import { Icon, Brand, Badge, Footer, Toasts, Modal, Button, Field, Select, Textarea } from "./ui";
 import Dashboard from "./modules/Dashboard";
 import Warga from "./modules/Warga";
 import Tamu from "./modules/Tamu";
@@ -28,6 +28,45 @@ function DbChip() {
   const { dbStatus } = useApp();
   const [t, l] = DB_UI[dbStatus] || DB_UI.lokal;
   return <span className="hidden md:inline-flex"><Badge tone={t}>{l}</Badge></span>;
+}
+
+function GuideModal({ open, onClose, role }) {
+  const roles = role ? [role] : ["warga", "rt", "keamanan", "kebersihan", "bendahara", "rw"];
+  return (
+    <Modal open={open} onClose={onClose} wide title={role ? `Panduan uji: ${ROLES[role]}` : "Panduan uji"}>
+      <p className="mb-4 text-sm text-slate-500">Data tersimpan di database bersama, jadi ajak teman memegang peran lain dan lihat hasilnya saling terhubung. Temukan masalah? Tekan tombol Masukan.</p>
+      <div className="space-y-5">
+        {roles.map((r) => (
+          <div key={r}>
+            <p className="mb-2 text-sm font-bold text-navy">{ROLES[r]}</p>
+            <ol className="list-decimal space-y-1.5 pl-5 text-sm text-slate-600">{(SCENARIOS[r] || []).map((t, i) => <li key={i}>{t}</li>)}</ol>
+          </div>
+        ))}
+      </div>
+    </Modal>
+  );
+}
+
+function FeedbackModal({ open, onClose }) {
+  const { add, toast, role, nav } = useApp();
+  const [f, setF] = useState({ jenis: "Temuan masalah", pesan: "", nilai: 0 });
+  const [err, setErr] = useState("");
+  useEffect(() => { if (open) { setF({ jenis: "Temuan masalah", pesan: "", nilai: 0 }); setErr(""); } }, [open]);
+  const send = () => {
+    if (f.pesan.trim().length < 5) return setErr("Tulis masukan Anda (minimal 5 karakter)");
+    add("masukan", { jenis: f.jenis, pesan: f.pesan.trim(), nilai: f.nilai || null, role: ROLES[role] || "-", halaman: nav.view, status: "Baru" });
+    toast("Terima kasih, masukan Anda tersimpan"); onClose();
+  };
+  return (
+    <Modal open={open} onClose={onClose} title="Beri masukan" footer={<><Button variant="ghost" onClick={onClose}>Batal</Button><Button onClick={send}>Kirim</Button></>}>
+      <div className="space-y-4">
+        <Field label="Jenis"><Select value={f.jenis} onChange={(e) => setF({ ...f, jenis: e.target.value })} options={["Temuan masalah", "Saran perbaikan", "Pertanyaan"]} /></Field>
+        <Field label="Masukan Anda *" error={err} hint={`Halaman: ${nav.view}, peran: ${ROLES[role] || "-"} (otomatis tercatat)`}><Textarea rows={4} value={f.pesan} onChange={(e) => { setF({ ...f, pesan: e.target.value }); setErr(""); }} placeholder="Apa yang terjadi, atau apa yang sebaiknya ditambah?" /></Field>
+        <div><p className="mb-1.5 text-[13px] font-semibold text-navy">Seberapa mudah halaman ini dipakai? (opsional)</p>
+          <div className="flex gap-2">{[1, 2, 3, 4, 5].map((n) => <button key={n} type="button" onClick={() => setF({ ...f, nilai: n })} className={`h-10 w-10 rounded-xl text-sm font-bold ring-1 ring-inset ${f.nilai === n ? "bg-navy text-white ring-navy" : "bg-white text-slate-600 ring-slate-200"}`}>{n}</button>)}</div></div>
+      </div>
+    </Modal>
+  );
 }
 
 class Boundary extends React.Component {
@@ -67,10 +106,14 @@ const ROLE_UI = {
 
 function Login() {
   const { login, toast, data } = useApp();
+  const [guide, setGuide] = useState(false);
   const enter = (r) => {
     let houseId;
     if (r === "warga") {
-      const h = data.rumah.find((x) => x.status === "tinggal" && x.iplStatus === "menunggak") || data.rumah.find((x) => x.status === "tinggal") || data.rumah[0];
+      const tinggal = data.rumah.filter((x) => x.status === "tinggal");
+      const pool = tinggal.filter((x) => x.iplStatus !== "lunas");
+      const list = pool.length ? pool : tinggal.length ? tinggal : data.rumah;
+      const h = list[Math.floor(Math.random() * list.length)];   // acak, agar penguji tidak berebut satu rumah
       houseId = h ? h.id : "";
     }
     login({ role: r, name: ROLES[r], houseId, rt: r === "rt" ? "29-01" : undefined });
@@ -79,7 +122,8 @@ function Login() {
   const order = ["warga", ...PICK_ROLES.filter((r) => r !== "warga")];
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="px-5 pt-5 sm:px-8"><Brand size={40} /></header>
+      <header className="flex items-center justify-between px-5 pt-5 sm:px-8"><Brand size={40} /><button onClick={() => setGuide(true)} className="flex items-center gap-2 rounded-xl bg-white px-3.5 py-2 text-xs font-semibold text-navy shadow-card hover:bg-mint-50"><Icon n="file" className="h-4 w-4" />Panduan uji</button></header>
+      <GuideModal open={guide} onClose={() => setGuide(false)} />
       <main className="mx-auto grid w-full max-w-6xl flex-1 items-stretch gap-8 px-5 py-8 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:gap-14">
         <section className="fade-up relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-navy-800 via-navy-700 to-navy-600 p-8 text-white shadow-card sm:p-12 lg:min-h-[520px]">
           <span className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-mint-500/25 blur-3xl" />
@@ -187,6 +231,8 @@ function Shell() {
   const { role, nav, go, logout } = useApp();
   const [open, setOpen] = useState(false);
   const [find, setFind] = useState(false);
+  const [guide, setGuide] = useState(false);
+  const [fb, setFb] = useState(false);
   useEffect(() => { const h = (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setFind(true); } }; window.addEventListener("keydown", h); return () => window.removeEventListener("keydown", h); }, []);
   const items = NAV[role] || [];
   const ids = [...items.map((m) => m.id), ...(EXTRA[role] || [])];
@@ -210,7 +256,7 @@ function Shell() {
         <button onClick={() => go("dashboard", {})} aria-label="Ke dashboard"><Brand size={40} /></button>
         <div className="flex items-center gap-2 sm:gap-3">
           <button onClick={() => setFind(true)} className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-500 shadow-card hover:bg-mint-50" aria-label="Cari cepat"><Icon n="search" className="h-4 w-4" /><span className="hidden sm:inline">Cari…</span><kbd className="hidden rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-400 md:inline">Ctrl K</kbd></button>
-          <DbChip /><span className="hidden sm:inline-flex"><Badge tone="green">{ROLES[role]}</Badge></span>
+          <button onClick={() => setGuide(true)} className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-card hover:bg-mint-50" aria-label="Panduan uji"><Icon n="file" className="h-4 w-4" /><span className="hidden lg:inline">Panduan</span></button><button onClick={() => setFb(true)} className="flex items-center gap-1.5 rounded-xl bg-mint-500 px-3 py-2 text-xs font-semibold text-white shadow-card hover:bg-mint-600" aria-label="Beri masukan"><Icon n="msg" className="h-4 w-4" /><span className="hidden lg:inline">Masukan</span></button><DbChip /><span className="hidden sm:inline-flex"><Badge tone="green">{ROLES[role]}</Badge></span>
           <button onClick={logout} className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-navy shadow-card hover:bg-slate-50"><Icon n="logout" className="h-4 w-4" />Keluar</button>
         </div>
       </header>
@@ -234,6 +280,8 @@ function Shell() {
       </div>
 
       <SearchModal open={find} onClose={() => setFind(false)} items={items} />
+      <GuideModal open={guide} onClose={() => setGuide(false)} role={role} />
+      <FeedbackModal open={fb} onClose={() => setFb(false)} />
       <nav className="fixed inset-x-0 bottom-0 z-30 flex rounded-t-3xl border-t border-slate-100 bg-white/95 shadow-[0_-8px_24px_-12px_rgba(18,41,74,.18)] pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" aria-label="Navigasi utama">
         {bottom.map((m) => (
           <button key={m.label} onClick={() => go(m.id, m.params || {})} className={`flex flex-1 flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-semibold ${view === m.id ? "text-navy" : "text-slate-400"}`}>

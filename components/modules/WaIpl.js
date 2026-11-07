@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useApp } from "@/lib/store";
 import { IPL_NOMINAL, RT_LIST, rtKeyOf, rtLabel, groupName } from "@/lib/config";
 import { rtStats, textPengumuman, textRekap, applyPayment, periode, waLink, waShare, nomorWA } from "@/lib/wa";
@@ -39,6 +39,8 @@ export function QrPay({ fixedId, onPaid }) {
   const [proc, setProc] = useState("");
   const [done, setDone] = useState(null);
   const h = data.rumah.find((x) => x.id === houseId.trim().toUpperCase());
+  const [hpTouched, setHpTouched] = useState(false);
+  useEffect(() => { if (h && !hpTouched && !cfg.nomorTester) setHp(h.status === "ngontrak" ? h.penyewaHp : h.hp); }, [houseId]); // eslint-disable-line
   const key = h ? rtKeyOf(h) : "29-01";
   const per = h ? periode(h, Number(n)) : null;
 
@@ -75,7 +77,7 @@ export function QrPay({ fixedId, onPaid }) {
           )}
           <Field label="Jumlah bulan yang dibayar"><Select value={n} onChange={(e) => { setN(e.target.value); setDone(null); }} options={cfg.opsiBulan.map((b) => ({ value: b, label: `${b} bulan - ${rp(b * IPL_NOMINAL)}` }))} /></Field>
           {per && <p className="rounded-xl bg-mint-50 p-3 text-sm text-navy">Periode yang dibayar: <b>{per.short}</b></p>}
-          <Field label="Nomor WhatsApp pembayar *" hint="Notifikasi pribadi dikirim ke nomor ini."><Input value={hp} onChange={(e) => setHp(e.target.value)} placeholder="08xxxxxxxxxx" /></Field>
+          <Field label="Nomor WhatsApp pembayar *" hint="Notifikasi pribadi dikirim ke nomor ini."><Input value={hp} onChange={(e) => { setHp(e.target.value); setHpTouched(true); }} placeholder="08xxxxxxxxxx" /></Field>
         </div>
       </Card>
       <Card className="text-center">

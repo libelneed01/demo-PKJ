@@ -12,13 +12,13 @@ const MODULES = [
   { label: "Serah Terima Security", cols: ["shiftSecurity"] }, { label: "Serah Terima Kebersihan", cols: ["shiftKebersihan"] },
   { label: "Pengaduan", cols: ["pengaduan"] }, { label: "Parkir (pelanggaran)", cols: ["pelanggaran"] },
   { label: "Laporan Sampah", cols: ["sampahLaporan"] }, { label: "Kerusakan Fasilitas", cols: ["kerusakan"] },
-  { label: "Izin Renovasi & Keramaian", cols: ["izin"] }, { label: "Ketidakhadiran petugas", cols: ["ketidakhadiran"] }, { label: "Pesan WhatsApp (simulasi)", cols: ["waPesan"] }, { label: "Dokumen & upload", cols: ["uploads"] },
+  { label: "Izin Renovasi & Keramaian", cols: ["izin"] }, { label: "Masukan penguji", cols: ["masukan"] }, { label: "Ketidakhadiran petugas", cols: ["ketidakhadiran"] }, { label: "Pesan WhatsApp (simulasi)", cols: ["waPesan"] }, { label: "Dokumen & upload", cols: ["uploads"] },
 ];
 
 export default function Panel() {
   const { data, clearTesting, clearTestingCols, resetAll, toast } = useApp();
   const [c, setC] = useState(null);
-  const { dbStatus } = useApp();
+  const { dbStatus, data: appData, update } = useApp();
   const [audit, setAudit] = useState(null);
   const loadAudit = async () => {
     if (!DB_ENABLED) return setAudit([]);
@@ -54,6 +54,15 @@ export default function Panel() {
             </div>
           ))}
         </div>
+      </Card>
+      <Card className="mt-4">
+        <h2 className="text-base font-bold text-navy">Masukan penguji ({(appData.masukan || []).length})</h2>
+        <p className="mb-3 text-xs text-slate-500">Dikirim lewat tombol Masukan di setiap halaman.</p>
+        <DataTable rows={[...(appData.masukan || [])].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 30)} empty="Belum ada masukan." columns={[
+          { label: "Waktu", render: (m) => fmtDT(m.at) }, { label: "Jenis", render: (m) => <Badge tone={m.jenis === "Temuan masalah" ? "red" : m.jenis === "Saran perbaikan" ? "yellow" : "navy"}>{m.jenis}</Badge> },
+          { label: "Peran / halaman", render: (m) => `${m.role} / ${m.halaman}` }, { label: "Nilai", render: (m) => (m.nilai ? m.nilai + "/5" : "-") }, { label: "Pesan", key: "pesan" },
+          { label: "", render: (m) => (m.status === "Selesai" ? <Badge tone="green">Selesai</Badge> : <button onClick={() => update("masukan", m.id, { status: "Selesai" })} className="text-xs font-semibold text-mint-700">Tandai selesai</button>) },
+        ]} />
       </Card>
       <Card className="mt-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
